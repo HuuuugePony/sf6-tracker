@@ -51,6 +51,20 @@
             color: #ffffff;
         }
         
+        .header-title-wrap {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .header-quote {
+            font-size: 11px;
+            color: #888;
+            font-style: italic;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+        
         .user-status {
             display: flex;
             align-items: center;
@@ -1316,6 +1330,12 @@
         .rival-winrate-loss {
             color: #f87171;
         }
+        .rival-detail-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 15px;
+        }
         .content-wrapper {
             position: relative;
             height: 100%;
@@ -1815,6 +1835,7 @@
             border-bottom: 1px solid #dee2e6;
         }
         body.light-theme .header h1 { color: #333; }
+        body.light-theme .header-quote { color: #999; }
         body.light-theme .player-name { color: #333; }
         body.light-theme .player-name:hover { color: #4a9eff; }
         body.light-theme .user-id { color: #666; }
@@ -2038,6 +2059,9 @@
         body.light-theme .rival-winrate-table tr:nth-child(even) {
             background: rgba(0,0,0,0.02);
         }
+        body.light-theme .rival-detail-title {
+            color: #333;
+        }
         /* Login modal */
         body.light-theme .login-modal-content {
             background: #ffffff; border-color: #dee2e6;
@@ -2183,7 +2207,10 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>SF6-TRACKER</h1>
+            <div class="header-title-wrap">
+                <h1>SF6-TRACKER</h1>
+                <div class="header-quote">强者不靠馈赠，全凭实力自证</div>
+            </div>
             <div class="user-status">
                 <span class="status-indicator" id="statusIndicator"></span>
                 <span id="statusText">未登录</span>
@@ -3315,7 +3342,7 @@
             
             let html = `
                 <div style="padding: 20px;">
-                    <h3 style="margin-bottom: 15px; font-size: 16px;">${charName} 对阵各角色胜率（最近赛季）</h3>
+                    <h3 class="rival-detail-title">${charName} 对阵各角色胜率（最近赛季）</h3>
                     <table class="rival-winrate-table">
                         <thead>
                             <tr>

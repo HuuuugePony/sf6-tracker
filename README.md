@@ -6,10 +6,7 @@
 
 ---
 
-
 *追踪对战记录 · 解析角色胜率 · 洞察 LP/MR 趋势*
-
-**[查看战绩](#功能特性)** · **[开始使用](#安装)** · **[加入战斗](#运行方式)**
 
 ---
 
@@ -23,9 +20,14 @@ SF6 Tracker 是一款专为《街头霸王6》玩家打造的战绩追踪工具�
 
 **均使用官方接口，请勿频繁查询。**
 
+- 有朋友就要问了：为什么不直接去官网/游戏查？
+- 更方便的查成分（）其实是按照自己的想法做了一些更方便的功能，数据都是官方的。
+
 ---
 
 ## 🎮 ROUND 1 — 功能特性
+
+![SF6 Tracker 界面预览](menmen.png)
 
 | 招式 | 说明 |
 |------|------|
@@ -103,18 +105,21 @@ uvicorn main:app --host 127.0.0.1 --port 8000
 
 ```
 sf6-tracker/
-├── crawler.py           # 🕷️ 爬虫核心逻辑
-├── main.py              # 🌐 FastAPI Web 服务
-├── desktop_app.py       # 🖥️ 桌面应用入口
-├── index.html           # 🎨 前端页面
-├── desktop_styles.css   # 🎭 桌面端样式
-├── requirements.txt     # 📦 Python 依赖
-└── README.md            # 📜 项目说明（你正在看的这个）
+├── crawler.py              # 🕷️ 采集核心逻辑
+├── main.py                 # 🌐 FastAPI Web 服务
+├── desktop_app.py          # 🖥️ 桌面应用入口
+├── index.html              # 🎨 前端页面
+├── desktop_styles.css      # 🎭 桌面端样式
+├── chunli.ico              # 🎯 应用图标
+├── player_info_schema.md   # 📋 玩家数据字段说明
+├── sf6tracker.spec         # 📦 PyInstaller 打包配置
+├── requirements.txt        # 📦 Python 依赖
+└── README.md               # 📜 项目说明（你正在看的这个）
 ```
 
 ---
 
-## 🏆 K.O.! — 版本
+## 🏆 感谢对战！ — 版本
 
 **v0.1** — *战斗才刚刚开始...*
 

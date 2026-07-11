@@ -3,7 +3,7 @@ SF6 Tracker - FastAPI Web Service
 简单的街霸6对战记录爬虫 API 服务
 """
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse, FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import time
@@ -68,13 +68,21 @@ def home_redirect():
 @app.get("/home", response_class=HTMLResponse)
 def home():
     """主页 - 登录和用户信息展示"""
-    return FileResponse(os.path.join(RESOURCE_PATH, 'index.html'))
+    resp = FileResponse(os.path.join(RESOURCE_PATH, 'index.html'))
+    resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    resp.headers['Pragma'] = 'no-cache'
+    resp.headers['Expires'] = '0'
+    return resp
 
 
 @app.get("/search", response_class=HTMLResponse)
 def search_page(uid: str = None):
     """查询页面 - 支持uid参数"""
-    return FileResponse(os.path.join(RESOURCE_PATH, 'index.html'))
+    resp = FileResponse(os.path.join(RESOURCE_PATH, 'index.html'))
+    resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    resp.headers['Pragma'] = 'no-cache'
+    resp.headers['Expires'] = '0'
+    return resp
 
 
 @app.post("/api/login/start")
