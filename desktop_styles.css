@@ -1,0 +1,491 @@
+/* SF6 Tracker - 桌面端原生样式优化 */
+/* 此文件仅在 pywebview 桌面应用中加载 */
+
+/* 移除浏览器默认滚动条，使用原生样式 */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #1a1a1a;
+    border-left: 1px solid #333;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #444;
+    border-radius: 2px;
+    border: 1px solid #555;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+::-webkit-scrollbar-corner {
+    background: #1a1a1a;
+}
+
+/* 优化字体渲染，使用系统字体栈 */
+body {
+    font-family: 'Segoe UI', 'Microsoft YaHei UI', 'Microsoft YaHei', system-ui, -apple-system, sans-serif !important;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    background: #0a0a0a !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important; /* 防止出现双滚动条 */
+}
+
+/* 容器全屏填充 */
+.container {
+    max-width: 1024px !important;
+    width: 100% !important;
+    height: 100vh !important;
+    margin: 0 auto !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #0f0f0f !important;
+}
+
+/* 标题栏优化 - 更像原生应用 */
+.header {
+    background: linear-gradient(to bottom, #1f1f1f 0%, #181818 100%) !important;
+    border-bottom: 1px solid #2d2d2d !important;
+    padding: 8px 16px !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+    user-select: none; /* 防止选中标题栏文字 */
+    -webkit-app-region: drag; /* 允许拖动窗口 */
+}
+
+.header h1 {
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.3px;
+    color: #e0e0e0 !important;
+}
+
+/* 按钮原生样式 */
+button, .login-btn-small, .refresh-btn, .action-btn {
+    font-family: inherit !important;
+    border-radius: 3px !important;
+    transition: all 0.15s ease !important;
+    outline: none !important;
+}
+
+button:focus, .login-btn-small:focus {
+    box-shadow: 0 0 0 2px rgba(100, 100, 100, 0.3) !important;
+}
+
+button:active {
+}
+
+/* 侧边栏优化 */
+.sidebar {
+    background: #121212 !important;
+    border-right: 1px solid #2d2d2d !important;
+    box-shadow: inset -1px 0 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+.sidebar-tab {
+    font-size: 13px !important;
+    padding: 12px 16px !important;
+    transition: all 0.15s ease !important;
+    border-left: 2px solid transparent !important;
+}
+
+.sidebar-tab:hover {
+    background: #1e1e1e !important;
+    color: #ccc !important;
+}
+
+.sidebar-tab.active {
+    background: #1a1a1a !important;
+    border-left-color: #555 !important;
+    color: #fff !important;
+    font-weight: 500 !important;
+}
+
+/* 内容区域优化 */
+.content-area {
+    background: #0f0f0f !important;
+    padding: 12px !important;
+}
+
+/* 卡片/区块样式 */
+.section {
+    background: #161616 !important;
+    border: 1px solid #2a2a2a !important;
+    border-radius: 4px !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+    margin-bottom: 12px !important;
+}
+
+.section h2 {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: #e0e0e0 !important;
+    border-bottom: 1px solid #2a2a2a !important;
+    padding-bottom: 8px !important;
+    margin-bottom: 12px !important;
+}
+
+/* 输入框原生样式 */
+input, select, textarea {
+    font-family: inherit !important;
+    border-radius: 3px !important;
+    border: 1px solid #3a3a3a !important;
+    background: #1a1a1a !important;
+    color: #e0e0e0 !important;
+    padding: 6px 10px !important;
+    outline: none !important;
+    transition: border-color 0.15s ease !important;
+}
+
+input:focus, select:focus, textarea:focus {
+    border-color: #555 !important;
+    box-shadow: 0 0 0 2px rgba(80, 80, 80, 0.2) !important;
+}
+
+/* 表格样式优化 */
+table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+}
+
+th, td {
+    border: 1px solid #2a2a2a !important;
+    padding: 8px 10px !important;
+    font-size: 12px !important;
+}
+
+th {
+    background: #1a1a1a !important;
+    font-weight: 600 !important;
+    color: #ccc !important;
+    text-align: left !important;
+}
+
+tr:nth-child(even) {
+    background: #141414 !important;
+}
+
+tr:hover {
+    background: #1e1e1e !important;
+}
+
+/* 模态框优化 */
+.login-modal-content, .modal-content {
+    background: #1a1a1a !important;
+    border: 1px solid #333 !important;
+    border-radius: 6px !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* 链接样式 */
+a {
+    color: #888 !important;
+    text-decoration: none !important;
+    transition: color 0.15s ease !important;
+}
+
+a:hover {
+    color: #bbb !important;
+}
+
+/* 选中状态 */
+::selection {
+    background: rgba(100, 100, 100, 0.3);
+    color: #fff;
+}
+
+/* 禁用状态 */
+:disabled, [disabled] {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+}
+
+/* 加载动画优化 */
+.loading-spinner {
+    border: 2px solid #2a2a2a !important;
+    border-top-color: #666 !important;
+}
+
+/* 响应式微调 */
+@media (max-width: 1000px) {
+    .sidebar {
+        width: 120px !important;
+    }
+}
+
+/* ==================== 亮色主题桌面端覆盖 ==================== */
+body.light-theme {
+    background: #f0f2f5 !important;
+}
+body.light-theme .container {
+    background: #ffffff !important;
+}
+body.light-theme .header {
+    background: linear-gradient(to bottom, #ffffff 0%, #f8f9fa 100%) !important;
+    border-bottom: 1px solid #dee2e6 !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+}
+body.light-theme .header h1 { color: #333 !important; }
+body.light-theme .sidebar {
+    background: #f8f9fa !important;
+    border-right: 1px solid #dee2e6 !important;
+    box-shadow: none !important;
+}
+body.light-theme .sidebar-tab { color: #666 !important; }
+body.light-theme .sidebar-tab:hover {
+    background: #e9ecef !important; color: #333 !important;
+}
+body.light-theme .sidebar-tab.active {
+    background: #ffffff !important;
+    border-left-color: #4a9eff !important;
+    color: #333 !important;
+}
+body.light-theme .content-area { background: #f0f2f5 !important; }
+body.light-theme .section {
+    background: #ffffff !important;
+    border-color: #dee2e6 !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+}
+body.light-theme .section h2 {
+    color: #333 !important;
+    border-bottom-color: #dee2e6 !important;
+}
+body.light-theme .fixed-nav-section {
+    background: #ffffff !important;
+}
+body.light-theme .sub-nav {
+    background: #f8f9fa !important;
+    border-bottom-color: #dee2e6 !important;
+}
+body.light-theme .match-card {
+    background: #ffffff !important;
+    border-color: #dee2e6 !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06) !important;
+}
+body.light-theme .match-card:hover {
+    border-color: #adb5bd !important;
+}
+body.light-theme .match-player-name { color: #333 !important; }
+body.light-theme .player-id { color: #888 !important; }
+body.light-theme .match-character {
+    background: #f0f2f5 !important; color: #555 !important;
+    border-color: #dee2e6 !important;
+}
+body.light-theme .character-placeholder {
+    background: #f0f2f5 !important; color: #555 !important;
+}
+body.light-theme .detail-item {
+    background: #f0f2f5 !important; color: #555 !important;
+}
+body.light-theme .detail-item.input-classic {
+    background: rgb(147, 35, 234) !important; color: white !important;
+    text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000 !important;
+}
+body.light-theme .detail-item.input-modern {
+    background: rgb(220, 92, 17) !important; color: white !important;
+    text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000 !important;
+}
+body.light-theme .replay-id {
+    background: #f0f2f5 !important; color: #555 !important;
+}
+body.light-theme .battle-type { color: #555 !important; }
+body.light-theme .side-badge {
+    background: #e9ecef !important; color: #333 !important;
+}
+body.light-theme .match-header { border-bottom-color: #dee2e6 !important; }
+body.light-theme .match-footer { border-top-color: #dee2e6 !important; color: #888 !important; }
+body.light-theme .player-profile-section {
+    background: #ffffff !important; border-color: #dee2e6 !important;
+}
+body.light-theme .profile-header { border-bottom-color: #dee2e6 !important; }
+body.light-theme .profile-title { color: #333 !important; }
+body.light-theme .profile-player-name { color: #666 !important; }
+body.light-theme .stat-item {
+    background: #f8f9fa !important; border-color: #dee2e6 !important;
+}
+body.light-theme .stat-label { color: #888 !important; }
+body.light-theme .stat-value { color: #333 !important; }
+body.light-theme .chart-section {
+    background: #ffffff !important; border-color: #dee2e6 !important;
+}
+body.light-theme .chart-title { color: #333 !important; }
+body.light-theme .chart-stat-value { color: #333 !important; }
+body.light-theme .chart-container {
+    background: #f8f9fa !important; border-color: #dee2e6 !important;
+}
+body.light-theme .chart-toggle-btn,
+body.light-theme .chart-type-btn {
+    background: #f0f2f5 !important; color: #666 !important;
+    border-color: #dee2e6 !important;
+}
+body.light-theme .chart-toggle-btn:hover,
+body.light-theme .chart-type-btn:hover {
+    background: #e9ecef !important; color: #333 !important;
+}
+body.light-theme .chart-type-btn.active {
+    background: #e9ecef !important; color: #333 !important;
+}
+body.light-theme .battle-stats-block {
+    background: #f8f9fa !important; border-color: #dee2e6 !important;
+}
+body.light-theme .battle-stats-block h3 {
+    color: #333 !important; border-bottom-color: #dee2e6 !important;
+}
+body.light-theme .gauge-rate-list .rate-name { color: #555 !important; }
+body.light-theme .gauge-rate-list .rate-value { color: #333 !important; }
+body.light-theme .battle-dl dt {
+    color: #888 !important; border-bottom-color: #dee2e6 !important;
+}
+body.light-theme .battle-dl .stat-name { color: #666 !important; }
+body.light-theme .battle-dl .stat-count { color: #333 !important; }
+body.light-theme .rival-winrate-panel {
+    background: #ffffff !important; border-color: #dee2e6 !important;
+}
+body.light-theme .rival-winrate-header { border-bottom-color: #dee2e6 !important; }
+body.light-theme .rival-winrate-title { color: #333 !important; }
+body.light-theme .rival-char-checkbox {
+    background: #f0f2f5 !important; border-color: #dee2e6 !important;
+    color: #555 !important;
+}
+body.light-theme .rival-char-checkbox.checked {
+    background: #e9ecef !important; color: #333 !important;
+}
+body.light-theme .rival-winrate-table th {
+    background: #f0f2f5 !important; color: #666 !important;
+}
+body.light-theme .rival-winrate-table td { color: #555 !important; }
+body.light-theme .rival-winrate-table th,
+body.light-theme .rival-winrate-table td {
+    border-bottom-color: #dee2e6 !important;
+}
+body.light-theme .page-btn {
+    background: #ffffff !important; color: #333 !important;
+    border-color: #dee2e6 !important;
+}
+body.light-theme .page-btn:hover:not(:disabled) {
+    background: #e9ecef !important;
+}
+body.light-theme .page-btn.active {
+    background: #e9ecef !important;
+}
+body.light-theme .pagination { border-top-color: #dee2e6 !important; }
+body.light-theme .toolbar { border-bottom-color: #dee2e6 !important; }
+body.light-theme .toolbar-title { color: #555 !important; }
+body.light-theme .character-filter-select {
+    background: #ffffff !important; color: #333 !important;
+    border-color: #dee2e6 !important;
+}
+body.light-theme .profile-detail-toggle {
+    color: #999 !important; border-top-color: #dee2e6 !important;
+}
+body.light-theme .profile-detail-toggle:hover { color: #333 !important; }
+/* Inputs & buttons */
+body.light-theme input,
+body.light-theme select,
+body.light-theme textarea {
+    background: #ffffff !important;
+    border-color: #dee2e6 !important;
+    color: #333 !important;
+}
+body.light-theme input:focus,
+body.light-theme select:focus,
+body.light-theme textarea:focus {
+    border-color: #4a9eff !important;
+    box-shadow: 0 0 0 2px rgba(74,158,255,0.2) !important;
+}
+body.light-theme button {
+    background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%) !important;
+    color: #333 !important;
+    border-color: #ced4da !important;
+}
+body.light-theme button:hover {
+    background: linear-gradient(135deg, #dee2e6 0%, #ced4da 100%) !important;
+}
+body.light-theme .refresh-btn,
+body.light-theme .refresh-btn:hover {
+    background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%) !important;
+    color: white !important;
+    border-color: #444444 !important;
+    box-shadow: 0 2px 6px rgba(39, 174, 96, 0.4) !important;
+}
+body.light-theme .login-modal-content,
+body.light-theme .modal-content {
+    background: #ffffff !important;
+    border-color: #dee2e6 !important;
+}
+body.light-theme .login-modal-header {
+    border-bottom-color: #dee2e6 !important;
+}
+body.light-theme .login-modal-header h3 { color: #333 !important; }
+body.light-theme .close-btn { color: #999 !important; }
+body.light-theme .close-btn:hover { color: #333 !important; }
+body.light-theme label { color: #555 !important; }
+body.light-theme .player-name { color: #333 !important; }
+body.light-theme .user-id { color: #666 !important; }
+body.light-theme .login-btn-small {
+    background: #e9ecef !important;
+    color: #333 !important;
+    border-color: #dee2e6 !important;
+}
+body.light-theme .login-btn-small:hover { background: #dee2e6 !important; }
+/* Query page */
+body.light-theme .query-container h2 {
+    color: #333 !important; border-bottom-color: #dee2e6 !important;
+}
+body.light-theme .search-bar input {
+    background: #ffffff !important; color: #333 !important;
+    border-color: #dee2e6 !important;
+}
+body.light-theme .search-btn {
+    background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%) !important;
+}
+body.light-theme .section-header { border-bottom-color: #dee2e6 !important; }
+body.light-theme .section-header h3 { color: #333 !important; }
+body.light-theme .favorites-section,
+body.light-theme .history-section {
+    background: #ffffff !important; border-color: #dee2e6 !important;
+}
+body.light-theme .favorite-item,
+body.light-theme .history-item {
+    background: #f8f9fa !important; border-color: #dee2e6 !important;
+}
+body.light-theme .favorite-name { color: #333 !important; }
+body.light-theme .favorite-id { color: #888 !important; }
+body.light-theme .history-id { color: #333 !important; }
+body.light-theme .history-time { color: #888 !important; }
+body.light-theme .settings-panel h2 {
+    color: #333 !important; border-bottom-color: #dee2e6 !important;
+}
+body.light-theme .settings-item {
+    background: #ffffff !important; border-color: #dee2e6 !important;
+}
+body.light-theme .settings-item-label { color: #333 !important; }
+body.light-theme .btn-clear-cache.confirm-state {
+    background: #ff6b35 !important;
+}
+body.light-theme .btn-clear-cache.done-state {
+    background: #27ae60 !important;
+}
+body.light-theme .version-badge {
+    background: #e9ecef !important; color: #666 !important;
+}
+body.light-theme .theme-switch-btn {
+    background: #ffffff !important; color: #666 !important;
+}
+body.light-theme .theme-switch-btn.active {
+    background: #4a9eff !important; color: #fff !important;
+}
+/* Scrollbar */
+body.light-theme ::-webkit-scrollbar-track { background: #f0f2f5; }
+body.light-theme ::-webkit-scrollbar-thumb { background: #ccc; border-color: #ddd; }
+body.light-theme ::-webkit-scrollbar-thumb:hover { background: #bbb; }
+body.light-theme ::-webkit-scrollbar-corner { background: #f0f2f5; }
+body.light-theme ::selection {
+    background: rgba(74,158,255,0.2); color: #333;
+}
