@@ -31,8 +31,7 @@ class SF6BattleLogCrawler:
         
         # 如果未提供cookie，使用默认cookie
         if cookie is None:
-            cookie = 'CookieConsent={stamp:%27TBAgiCGwi1ROsAX6hB1KBCR3Ry2Xqw0a8XCR2kAn/CwH3RqiFMHXGQ==%27%2Cnecessary:true%2Cpreferences:true%2Cstatistics:true%2Cmarketing:true%2Cmethod:%27explicit%27%2Cver:3%2Cutc:1779945590441%2Cregion:%27cn%27}; _gcl_au=1.1.1092837647.1779945589; _ga=GA1.1.171079987.1779945586; buckler_r_id=b90c7a95-37a3-45f1-a05b-ad10433e5d20; buckler_id=kr4BOgIrOjHnAEjmbM1lLm-C-O-al0y78_0VGgCJ4pP4Z-7HxW7sCrOu4bKXRL6L; _ga_B8S45G09HL=GS2.1.s1783191901$o5$g0$t1783191901$j60$l0$h0; buckler_praise_date=1783418483011; aws-waf-token=452e858f-34d8-4d5c-ae6f-2da890395236:EwoAtF5O8GceAAAA:hwym0xWbduK2FP45BcYDJXrcihgg3Jpkl7B+lzbAiSiufS9knrcVHncOivTo8VE/a6WNZLOvQ2PtAcc8jjgcFm2t4ZSTFWDFVuh4aM+MPvXteTeZvFJFeIwUMs9PCOQF72/mpym0OESJTrJkv5etEm7/E6Ep6W63sdhiMWaMkvRJ4x8t6iJy+EU5LLwgUNjeI94ssluofSfrfQ70om7duZmJTtixJkoPX/1et7jiEVwEZ1MIM3YZNipanAF8qh7fCW1gOguPrA==; _ga_LZJGXR1W9E=GS2.1.s1783418482$o24$g1$t1783423130$j44$l0$h0; _ga_4BKH6S3JTF=GS2.1.s1783418482$o24$g1$t1783423130$j44$l0$h0'
-
+            cookie = ''
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Accept': 'application/json',
