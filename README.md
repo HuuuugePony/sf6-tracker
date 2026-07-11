@@ -65,6 +65,7 @@ cd sf6-tracker
 # 安装依赖
 pip install -r requirements.txt
 ```
+或者直接下载已发布的版本 [SF6-Tracker.exe](https://github.com/HuuuugePony/sf6-tracker/releases/download/stable/SF6-Tracker-v0.1.exe)
 
 ---
 
@@ -75,6 +76,8 @@ pip install -r requirements.txt
 ```bash
 python desktop_app.py
 ```
+
+SF6-Tracker.exe 文件直接运行
 
 > 启动原生桌面窗口，无需打开浏览器，沉浸式战斗分析。
 
