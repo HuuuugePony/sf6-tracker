@@ -56,6 +56,19 @@ class QueryPlayerRequest(BaseModel):
     battle_type: str = 'all'  # 对战类型: all/rank/casual/custom/hub
 
 
+class RankingRequest(BaseModel):
+    """排行榜请求"""
+    character_id: str = 'chunli'  # 角色工具名
+    character_filter: int = 4  # 角色筛选类型
+    platform: int = 1  # 平台: 1=Steam
+    home_filter: int = 1  # 1=全球, 3=地区
+    home_category_id: int = 0  # 地区分类ID
+    home_id: int = 0  # 地区ID
+    page: int = 1  # 页码
+    season_type: int = 1  # 赛季类型
+    cookie: str = None  # 可选的cookie参数
+
+
 # ==================== API 接口 ====================
 
 @app.get("/", response_class=HTMLResponse)
@@ -362,6 +375,89 @@ def query_player(request: QueryPlayerRequest):
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"查询失败: {str(e)}")
+
+
+@app.post("/api/ranking")
+def get_ranking(request: RankingRequest):
+    """获取排行榜数据"""
+    global query_crawler
+    
+    try:
+        start_time = time.time()
+        # 优先使用请求中的cookie
+        cookie_to_use = None
+        if request.cookie:
+            cookie_to_use = request.cookie
+        elif stored_cookie:
+            cookie_to_use = stored_cookie
+        
+        # 复用查询爬虫实例获取build_id
+        if query_crawler is None or query_crawler.headers.get('cookie') != cookie_to_use:
+            query_crawler = SF6BattleLogCrawler(cookie=cookie_to_use)
+        
+        # 构造排行榜API URL
+        url = (
+            f'{query_crawler.api_base_url}/{query_crawler.build_id}/{query_crawler.lang}/ranking/master.json'
+            f'?character_filter={request.character_filter}'
+            f'&character_id={request.character_id}'
+            f'&platform={request.platform}'
+            f'&home_filter={request.home_filter}'
+            f'&home_category_id={request.home_category_id}'
+            f'&home_id={request.home_id}'
+            f'&page={request.page}'
+            f'&season_type={request.season_type}'
+        )
+        
+        response = query_crawler.session.get(url, timeout=10)
+        
+        # 尝试解析JSON（403时也可能有JSON响应）
+        try:
+            data = response.json()
+        except Exception:
+            if response.status_code == 403:
+                raise HTTPException(status_code=403, detail="排行榜需要登录后才能查看，请先登录")
+            response.raise_for_status()
+            return {"success": False}
+        
+        # 提取pageProps中的排行榜数据
+        page_props = data.get('pageProps', {})
+        
+        # 检查是否为403未登录状态（HTTP 403 或 pageProps内statusCode=403）
+        common = page_props.get('common', {})
+        if response.status_code == 403 or common.get('statusCode') == 403:
+            raise HTTPException(status_code=403, detail="排行榜需要登录后才能查看，请先登录")
+        
+        if response.status_code != 200:
+            raise HTTPException(status_code=response.status_code, detail=f"排行榜API返回异常状态: {response.status_code}")
+        
+        # 提取排行榜数据：master_rating_ranking.ranking_fighter_list
+        # 结构: {master_rating_ranking: {ranking_fighter_list: [...], current_page, total_page, total_count}}
+        ranking_data = page_props.get('master_rating_ranking', {})
+        ranking_list = []
+        pagination = {}
+        
+        if isinstance(ranking_data, dict):
+            ranking_list = ranking_data.get('ranking_fighter_list', [])
+            pagination = {
+                "current_page": ranking_data.get('current_page', request.page),
+                "total_page": ranking_data.get('total_page', 0),
+                "total_count": ranking_data.get('total_count', 0)
+            }
+        
+        elapsed = time.time() - start_time
+        print(f'[排行榜] 耗时: {elapsed:.2f}s')
+        
+        return {
+            "success": True,
+            "data": page_props,
+            "ranking_list": ranking_list,
+            "pagination": pagination
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"获取排行榜失败: {str(e)}")
 
 
 if __name__ == "__main__":
