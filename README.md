@@ -65,7 +65,7 @@ cd sf6-tracker
 # 安装依赖
 pip install -r requirements.txt
 ```
-或者直接下载已发布的版本 [SF6-Tracker.exe](https://github.com/HuuuugePony/sf6-tracker/releases/download/stable/SF6-Tracker-v0.2.exe)
+或者直接下载已发布的版本 [SF6-Tracker.exe](https://github.com/HuuuugePony/sf6-tracker/releases/download/v0.2/SF6-Tracker-v0.2.exe)
 
 ---
 
