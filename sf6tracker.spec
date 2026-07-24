@@ -55,7 +55,7 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='SF6 Tracker v0.1',
+    name='SF6 Tracker v0.2',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
