@@ -843,29 +843,8 @@ class SF6BattleLogCrawler:
 
 
 if __name__ == '__main__':
-    # 使用示例1：设置user_id后爬取
+    cookies_tmp = 'CookieConsent={stamp:%27TBAgiCGwi1ROsAX6hB1KBCR3Ry2Xqw0a8XCR2kAn/CwH3RqiFMHXGQ==%27%2Cnecessary:true%2Cpreferences:true%2Cstatistics:true%2Cmarketing:true%2Cmethod:%27explicit%27%2Cver:3%2Cutc:1779945590441%2Cregion:%27cn%27}; _gcl_au=1.1.1092837647.1779945589; _ga=GA1.1.171079987.1779945586; buckler_r_id=b90c7a95-37a3-45f1-a05b-ad10433e5d20; buckler_id=kr4BOgIrOjHnAEjmbM1lLm-C-O-al0y78_0VGgCJ4pP4Z-7HxW7sCrOu4bKXRL6L; _ga_B8S45G09HL=GS2.1.s1783744223$o6$g0$t1783744907$j59$l0$h0; _ga_4BKH6S3JTF=GS2.1.s1784913492$o35$g0$t1784913492$j60$l0$h0; _ga_LZJGXR1W9E=GS2.1.s1784913492$o35$g0$t1784913492$j60$l0$h0; buckler_praise_date=1784913492493'
     crawler = SF6BattleLogCrawler()
-    crawler.user_id = '4123104110'  # 请替换为你的实际用户ID
-    crawler.player_name = 'menmen'   # 请替换为你的实际用户名
-    
-    df = crawler.crawl(pages=10)
-    
-    if len(df) > 0:
-        # 设置全局显示选项
-        pd.set_option('display.max_rows', None)
-        pd.set_option('display.max_columns', None)
-        pd.set_option('display.width', None)
-        pd.set_option('display.max_colwidth', 50)
-        
-        schema = ['date', 'replay_id', 'player_name', 'my_side', 'my_result', 
-                  'my_character', 'my_lp', 'opponent_name', 'opponent_character', 'opponent_lp']
-        print(df[schema])
-        
-        # 保存到CSV
-        # df.to_csv('battles.csv', index=False, encoding='utf-8-sig')
-        # print('\n✓ 数据已保存到 battles.csv')
-    else:
-        print('\n⚠ 未获取到任何数据，请检查user_id和cookie是否正确')
 
 
 

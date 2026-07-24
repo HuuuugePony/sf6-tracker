@@ -202,6 +202,112 @@ def confirm_login(request: dict):
         raise HTTPException(status_code=500, detail=f"获取信息失败: {str(e)}")
 
 
+@app.post("/api/login/cookie")
+def login_with_cookie(request: dict):
+    """通过Cookie直接登录 - 用户手动粘贴Cookie"""
+    global stored_cookie, user_info
+    cookie_string = request.get('cookie', '').strip()
+    
+    if not cookie_string:
+        raise HTTPException(status_code=400, detail="Cookie不能为空")
+    
+    try:
+        import requests as req
+        import re as re_mod
+        import json as json_mod
+        
+        # 使用提供的cookie访问SF6官网首页
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7',
+            'cookie': cookie_string
+        }
+        
+        homepage_url = 'https://www.streetfighter.com/6/buckler/zh-hans'
+        response = req.get(homepage_url, headers=headers, timeout=10)
+        response.raise_for_status()
+        
+        # 从__NEXT_DATA__中提取用户信息（Next.js服务端渲染数据）
+        pattern = r'<script[^>]*id="__NEXT_DATA__"[^>]*type="application/json"[^>]*>(.*?)</script>'
+        match = re_mod.search(pattern, response.text, re_mod.DOTALL)
+        
+        extracted_user_id = None
+        extracted_player_name = None
+        
+        if match:
+            next_data = json_mod.loads(match.group(1))
+            page_props = next_data.get('props', {}).get('pageProps', {})
+            common = page_props.get('common', {})
+            login_user = common.get('loginUser', {})
+            
+            # 检查登录状态
+            if login_user.get('flg'):
+                # 已登录，提取用户信息
+                extracted_user_id = str(login_user.get('short_id', ''))
+                extracted_player_name = login_user.get('fighter_id', '')
+        
+        # 如果__NEXT_DATA__中没获取到，尝试用爬虫方式获取
+        if not extracted_user_id:
+            try:
+                crawler = SF6BattleLogCrawler(cookie=cookie_string)
+                # 尝试用已知用户信息获取profile来验证cookie有效性
+                # 通过访问profile/auth页面获取当前登录用户信息
+                auth_url = f'https://www.streetfighter.com/6/buckler/_next/data/{crawler.build_id}/zh-hans/profile/auth.json'
+                auth_resp = crawler.session.get(auth_url, timeout=5)
+                if auth_resp.status_code == 200:
+                    auth_data = auth_resp.json()
+                    auth_props = auth_data.get('pageProps', {})
+                    fighter_info = auth_props.get('fighter_banner_info', {})
+                    personal_info = fighter_info.get('personal_info', {})
+                    if personal_info.get('short_id'):
+                        extracted_user_id = str(personal_info['short_id'])
+                        extracted_player_name = personal_info.get('fighter_id', '')
+            except Exception:
+                pass
+        
+        # 路径3：不依赖网站登录态，直接用cookie尝试采集来验证有效性
+        if not extracted_user_id:
+            # 优先用前端传来的user_id，其次用全局已存的user_info
+            test_user_id = request.get('user_id') or user_info.get('user_id')
+            if test_user_id:
+                try:
+                    test_crawler = SF6BattleLogCrawler(cookie=cookie_string)
+                    test_crawler.set_user_id(test_user_id)
+                    page_data = test_crawler.fetch_page(page=1)
+                    battles, battle_user_info = test_crawler.parse_battles_from_json(page_data)
+                    if battles:
+                        # 采集成功 = cookie有效，从对战数据中获取用户信息
+                        extracted_user_id = battle_user_info.get('user_id') or str(test_user_id)
+                        extracted_player_name = battle_user_info.get('player_name') or user_info.get('player_name', '')
+                        print(f'✓ Cookie采集验证通过: {extracted_player_name}({extracted_user_id})')
+                except Exception as e:
+                    print(f'Cookie采集验证失败: {e}')
+        
+        if not extracted_user_id:
+            raise HTTPException(status_code=401, detail="Cookie无效或已过期，无法采集数据")
+        
+        # 保存到全局变量
+        stored_cookie = cookie_string
+        user_info = {
+            'user_id': extracted_user_id,
+            'player_name': extracted_player_name
+        }
+        
+        return {
+            "success": True,
+            "cookie": cookie_string,
+            "user_id": extracted_user_id,
+            "player_name": extracted_player_name,
+            "message": "Cookie登录成功"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Cookie登录失败: {str(e)}")
+
+
 @app.post("/api/get-cookie")
 def get_cookie():
     """获取Cookie（打开浏览器让用户登录）"""

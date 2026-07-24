@@ -57,7 +57,7 @@ if getattr(sys, 'frozen', False):
             return False
     sys.stdout = LogWriter(LOG_FILE, sys.stdout)
     sys.stderr = LogWriter(LOG_FILE, sys.stderr)
-
+    
 
 def start_server():
     """在后台线程启动 FastAPI 服务"""
