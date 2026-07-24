@@ -377,11 +377,22 @@
         
         .match-header {
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            position: relative;
             margin-bottom: 5px;
             padding-bottom: 4px;
             border-bottom: 1px solid #444444;
+        }
+        .match-header .match-result {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .match-header .match-header-right {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
         
         .match-date {
@@ -2557,6 +2568,145 @@
         body.light-theme .chart-svg path[stroke="#666666"] {
             stroke: #adb5bd;
         }
+
+        /* ==================== 收藏对局样式 ==================== */
+        .fav-star-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 2px 4px;
+            opacity: 0.4;
+            transition: all 0.2s;
+            line-height: 1;
+        }
+        .fav-star-btn:hover {
+            opacity: 0.8;
+            transform: scale(1.2);
+        }
+        .fav-star-btn.active {
+            opacity: 1;
+        }
+        .fav-filter-bar {
+            display: flex;
+            gap: 0;
+            border-bottom: 2px solid #333333;
+            margin-bottom: 10px;
+        }
+        .fav-filter-tab {
+            padding: 8px 16px;
+            font-size: 12px;
+            color: #999;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+        }
+        .fav-filter-tab:hover {
+            color: #ccc;
+        }
+        .fav-filter-tab.active {
+            color: #fff;
+            border-bottom-color: #f39c12;
+        }
+        .fav-filter-tab .fav-count {
+            font-size: 10px;
+            background: #333;
+            padding: 1px 5px;
+            border-radius: 8px;
+            margin-left: 4px;
+        }
+        .fav-filter-tab.active .fav-count {
+            background: #f39c12;
+            color: #000;
+        }
+        .fav-status-btn {
+            padding: 3px 10px;
+            font-size: 11px;
+            border: 1px solid #555;
+            border-radius: 3px;
+            cursor: pointer;
+            background: #2a2a2a;
+            color: #ccc;
+            transition: all 0.2s;
+        }
+        .fav-status-btn:hover {
+            border-color: #888;
+        }
+        .fav-status-btn.status-pending {
+            border-color: #f39c12;
+            color: #f39c12;
+        }
+        .fav-status-btn.status-watched {
+            border-color: #27ae60;
+            color: #27ae60;
+        }
+        .fav-remove-btn {
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            font-size: 13px;
+            padding: 2px 6px;
+            transition: color 0.2s;
+        }
+        .fav-remove-btn:hover {
+            color: #e74c3c;
+        }
+        .fav-match-card {
+            position: relative;
+        }
+        .fav-match-card.watched {
+            opacity: 0.6;
+        }
+        .fav-match-card.watched:hover {
+            opacity: 0.85;
+        }
+        .fav-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        /* 收藏对局亮色主题 */
+        body.light-theme .fav-filter-bar {
+            border-bottom-color: #dee2e6;
+        }
+        body.light-theme .fav-filter-tab {
+            color: #666;
+        }
+        body.light-theme .fav-filter-tab:hover {
+            color: #333;
+        }
+        body.light-theme .fav-filter-tab.active {
+            color: #333;
+            border-bottom-color: #e67e22;
+        }
+        body.light-theme .fav-filter-tab .fav-count {
+            background: #e9ecef;
+        }
+        body.light-theme .fav-filter-tab.active .fav-count {
+            background: #e67e22;
+            color: #fff;
+        }
+        body.light-theme .fav-status-btn {
+            background: #f8f9fa;
+            border-color: #dee2e6;
+            color: #555;
+        }
+        body.light-theme .fav-status-btn.status-pending {
+            border-color: #e67e22;
+            color: #e67e22;
+        }
+        body.light-theme .fav-status-btn.status-watched {
+            border-color: #27ae60;
+            color: #27ae60;
+        }
+        body.light-theme .fav-remove-btn {
+            color: #aaa;
+        }
+        body.light-theme .fav-remove-btn:hover {
+            color: #e74c3c;
+        }
     </style>
 </head>
 <body>
@@ -2570,8 +2720,8 @@
                 <span class="status-indicator" id="statusIndicator"></span>
                 <span id="statusText">未登录</span>
                 <div class="user-info" id="userInfo" style="display:none;">
-                    <span class="player-name" id="playerName" oncontextmenu="return copyToClipboard(currentUserInfo.player_name || '', event)" title="右键复制名称"></span>
-                    <span class="user-id" id="userId" oncontextmenu="return copyToClipboard(currentUserInfo.user_id || '', event)" title="右键复制ID"></span>
+                    <span class="player-name" id="playerName" oncontextmenu="return copyToClipboard(currentUserInfo.player_name || '', event)"></span>
+                    <span class="user-id" id="userId" oncontextmenu="return copyToClipboard(currentUserInfo.user_id || '', event)"></span>
                     <button class="login-btn-small" onclick="logout()" style="margin-left: 8px; background: #e74c3c; font-size: 11px; padding: 2px 8px;">退出</button>
                 </div>
                 <button class="login-btn-small" id="headerLoginBtn" onclick="showLoginModal()">登录</button>
@@ -2584,6 +2734,7 @@
                 <div class="sidebar-tab active" onclick="switchTab('home')">主页</div>
                 <div class="sidebar-tab" onclick="switchTab('query')">查询</div>
                 <div class="sidebar-tab" onclick="switchTab('ranking')">排行榜</div>
+                <div class="sidebar-tab" onclick="switchTab('favorites')">收藏</div>
                 <div class="sidebar-tab" onclick="switchTab('settings')">设置</div>
             </div>
             
@@ -2692,7 +2843,7 @@
                 <div id="loginStatus"></div>
                 
                 <div id="confirmSection" style="display:none; margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
-                    <p style="font-size: 13px; margin: 8px 0;">请在打开的浏览器中完成登录，然后点击下方按钮</p>
+                    <p style="font-size: 13px; margin: 8px 0; color: #ccc;">请在打开的浏览器中完成登录，然后点击下方按钮</p>
                     <button onclick="confirmLogin()" id="confirmBtn">获取用户信息</button>
                     <div id="confirmStatus"></div>
                 </div>
@@ -2756,6 +2907,8 @@
         let lastActiveTab = 'home';  // 记录上次激活的标签
         let searchHistory = [];  // 历史搜索记录
         let favoritePlayers = [];  // 收藏的玩家列表
+        let favoriteBattles = [];  // 收藏的对局列表
+        let favBattleFilter = 'all';  // 收藏对局筛选: all/pending/watched
         
         // 路由处理 - 根据URL路径和参数显示不同页面
         function handleRoute(shouldRefreshHome = false) {
@@ -2933,10 +3086,12 @@
             // 初始化主题
             initTheme();
             
+            // 加载收藏对局数据
+            loadFavoriteBattles();
+            
             // 尝试从 localStorage 恢复登录状态
             const restored = loadLoginState();
             if (restored) {
-                console.log('已自动恢复登录状态');
                 updateLoginStatus();
                 // 先渲染主页（显示空状态或缓存数据）
                 handleRoute(false);
@@ -2960,8 +3115,6 @@
                     });
                     
                     if (response.ok) {
-                        console.log('后端服务已就绪');
-                        
                         // 先设置用户信息到后端（因为后端重启后全局变量会丢失）
                         if (currentUserInfo && currentUserInfo.user_id) {
                             try {
@@ -2970,19 +3123,17 @@
                                     headers: {'Content-Type': 'application/json'},
                                     body: JSON.stringify(currentUserInfo)
                                 });
-                                console.log('已同步用户信息到后端');
                             } catch (error) {
                                 console.error('同步用户信息失败:', error);
                             }
                         }
                         
                         // 然后刷新主页数据
-                        console.log('自动刷新主页数据...');
                         refreshHomeData();
                         return;
                     }
                 } catch (error) {
-                    console.log(`等待后端服务... (${i + 1}/${maxRetries})`);
+                    // 等待后重试
                 }
                 
                 // 等待后重试
@@ -3076,7 +3227,6 @@
                     timestamp: Date.now()
                 };
                 localStorage.setItem('sf6_login_state', JSON.stringify(loginState));
-                console.log('登录状态已保存');
             } catch (error) {
                 console.error('保存登录状态失败:', error);
             }
@@ -3092,7 +3242,7 @@
                     // 检查是否过期（7天）
                     const sevenDays = 7 * 24 * 60 * 60 * 1000;
                     if (Date.now() - loginState.timestamp > sevenDays) {
-                        console.log('登录状态已过期，清除缓存');
+                        console.warn('登录状态已过期，清除缓存');
                         localStorage.removeItem('sf6_login_state');
                         return false;
                     }
@@ -3101,8 +3251,6 @@
                     cookie = loginState.cookie;
                     currentUserInfo = loginState.userInfo;
                     isLoggedIn = true;
-                    
-                    console.log('已从缓存恢复登录状态:', currentUserInfo);
                     return true;
                 }
             } catch (error) {
@@ -3118,7 +3266,6 @@
             currentUserInfo = { user_id: null, player_name: null };
             isLoggedIn = false;
             updateLoginStatus();
-            console.log('登录状态已清除');
         }
         
         // 退出登录
@@ -3156,6 +3303,9 @@
             } else if (tabName === 'ranking') {
                 lastActiveTab = 'ranking';
                 showRankingPage();
+            } else if (tabName === 'favorites') {
+                lastActiveTab = 'favorites';
+                showFavoritesPage();
             }
         }
         
@@ -3220,6 +3370,8 @@
                 queryData = { userId: null, matchData: [], userInfo: { user_id: null, player_name: null }, profile: null };
                 searchHistory = [];
                 favoritePlayers = [];
+                favoriteBattles = [];
+                favBattleFilter = 'all';
                 
                 // 更新UI
                 updateLoginStatus();
@@ -3755,14 +3907,6 @@
             const onlineStatus = playerProfile.online_status_name || '';
             let statusClass = 'status-offline';
             
-            // 调试日志：查看实际的在线状态值
-            console.log('[在线状态]', {
-                raw: onlineStatus,
-                isEmpty: !onlineStatus,
-                includesOffline: onlineStatus.includes('离线'),
-                includesOfflineJP: onlineStatus.includes('オフライン')
-            });
-            
             // 只要有状态文本且不是离线，就显示为活跃状态
             if (onlineStatus && onlineStatus.trim() !== '') {
                 // 只有明确包含"离线"或"オフライン"才是离线状态
@@ -4219,7 +4363,6 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    console.log('查询成功，玩家资料:', data.player_profile);
                     // 更新全局数据
                     matchData = data.data || [];
                     // 注意：不更新currentUserInfo，保持原有用户信息显示
@@ -4324,10 +4467,24 @@
             feedback.style.pointerEvents = 'none';
             feedback.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.3)';
             
-            // 获取目标元素的位置
+            // 获取目标元素的位置（确保不超出视口）
             const rect = event.target.getBoundingClientRect();
-            feedback.style.left = (rect.left + rect.width / 2 - 30) + 'px';
-            feedback.style.top = (rect.top - 30) + 'px';
+            let feedbackLeft = rect.left + rect.width / 2 - 30;
+            let feedbackTop = rect.top - 30;
+            // 防止超出右边界
+            if (feedbackLeft + 60 > window.innerWidth) {
+                feedbackLeft = window.innerWidth - 70;
+            }
+            // 防止超出左边界
+            if (feedbackLeft < 5) {
+                feedbackLeft = 5;
+            }
+            // 防止超出上边界，改为显示在下方
+            if (feedbackTop < 5) {
+                feedbackTop = rect.bottom + 5;
+            }
+            feedback.style.left = feedbackLeft + 'px';
+            feedback.style.top = feedbackTop + 'px';
             
             document.body.appendChild(feedback);
             
@@ -4341,6 +4498,233 @@
             }).onfinish = () => {
                 feedback.remove();
             };
+        }
+        
+        // ========== 收藏对局功能 ==========
+        
+        // 加载收藏对局
+        function loadFavoriteBattles() {
+            try {
+                const data = localStorage.getItem('sf6_favorite_battles');
+                favoriteBattles = data ? JSON.parse(data) : [];
+            } catch (error) {
+                console.error('加载收藏对局失败:', error);
+                favoriteBattles = [];
+            }
+        }
+        
+        // 保存收藏对局
+        function saveFavoriteBattles() {
+            try {
+                localStorage.setItem('sf6_favorite_battles', JSON.stringify(favoriteBattles));
+            } catch (error) {
+                console.error('保存收藏对局失败:', error);
+            }
+        }
+        
+        // 检查对局是否已收藏
+        function isBattleFavorited(replayId) {
+            if (!replayId) return false;
+            return favoriteBattles.some(b => b.replay_id === replayId);
+        }
+        
+        // 切换对局收藏状态（通过replay_id从matchData查找记录）
+        function toggleBattleFavoriteById(replayId) {
+            if (!replayId) return;
+            
+            const existingIndex = favoriteBattles.findIndex(b => b.replay_id === replayId);
+            
+            if (existingIndex !== -1) {
+                // 已收藏，取消
+                favoriteBattles.splice(existingIndex, 1);
+                saveFavoriteBattles();
+            } else {
+                // 未收藏，从matchData中查找记录并添加
+                const record = matchData.find(r => r.replay_id === replayId);
+                if (!record) return;
+                
+                favoriteBattles.unshift({
+                    replay_id: record.replay_id,
+                    date: record.date,
+                    my_result: record.my_result,
+                    my_character: record.my_character,
+                    my_character_image: record.my_character_image,
+                    my_lp: record.my_lp,
+                    my_master_rating: record.my_master_rating,
+                    my_league_rank: record.my_league_rank,
+                    my_input_type: record.my_input_type,
+                    my_side: record.my_side,
+                    my_round_results: record.my_round_results,
+                    player_name: record.player_name,
+                    opponent_name: record.opponent_name,
+                    opponent_character: record.opponent_character,
+                    opponent_character_image: record.opponent_character_image,
+                    opponent_lp: record.opponent_lp,
+                    opponent_league_rank: record.opponent_league_rank,
+                    opponent_input_type: record.opponent_input_type,
+                    battle_type: record.battle_type,
+                    status: 'pending',
+                    addedAt: Date.now()
+                });
+                saveFavoriteBattles();
+            }
+            
+            // 重新渲染当前战绩列表以更新星标状态
+            if (lastActiveTab === 'home' || lastActiveTab === 'query') {
+                renderMatchCards();
+            }
+        }
+        
+        // 显示收藏对局页面
+        function showFavoritesPage() {
+            // 更新侧边栏激活状态
+            document.querySelectorAll('.sidebar-tab').forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.textContent.includes('收藏')) {
+                    tab.classList.add('active');
+                }
+            });
+            
+            // 隐藏设置面板
+            hideSettingsPage();
+            
+            renderFavoritesPage();
+        }
+        
+        // 渲染收藏对局页面
+        function renderFavoritesPage() {
+            const fixedNavSection = document.getElementById('fixedNavSection');
+            const battlesScrollArea = document.getElementById('battlesScrollArea');
+            
+            // 统计各状态数量
+            const totalCount = favoriteBattles.length;
+            const pendingCount = favoriteBattles.filter(b => b.status === 'pending').length;
+            const watchedCount = favoriteBattles.filter(b => b.status === 'watched').length;
+            
+            // 渲染筛选栏
+            fixedNavSection.innerHTML = `
+                <div class="ranking-container">
+                    <h2>📌 收藏对局</h2>
+                    <div class="fav-filter-bar">
+                        <div class="fav-filter-tab ${favBattleFilter === 'all' ? 'active' : ''}" onclick="setFavFilter('all')">全部<span class="fav-count">${totalCount}</span></div>
+                        <div class="fav-filter-tab ${favBattleFilter === 'pending' ? 'active' : ''}" onclick="setFavFilter('pending')">待看<span class="fav-count">${pendingCount}</span></div>
+                        <div class="fav-filter-tab ${favBattleFilter === 'watched' ? 'active' : ''}" onclick="setFavFilter('watched')">已看<span class="fav-count">${watchedCount}</span></div>
+                    </div>
+                </div>
+            `;
+            
+            // 筛选数据
+            let filteredBattles = favoriteBattles;
+            if (favBattleFilter === 'pending') {
+                filteredBattles = favoriteBattles.filter(b => b.status === 'pending');
+            } else if (favBattleFilter === 'watched') {
+                filteredBattles = favoriteBattles.filter(b => b.status === 'watched');
+            }
+            
+            // 渲染列表
+            if (filteredBattles.length === 0) {
+                const emptyMsg = favBattleFilter === 'all' ? '还没有收藏对局，在战绩列表中点击 ☆ 收藏' :
+                    favBattleFilter === 'pending' ? '没有待看的对局' : '没有已看的对局';
+                battlesScrollArea.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📌</div>
+                        <div class="empty-state-text">${emptyMsg}</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            filteredBattles.forEach((battle, index) => {
+                const resultClass = (battle.my_result || '').toLowerCase().includes('胜') || (battle.my_result || '').toLowerCase().includes('win') ? 'win' : 'lose';
+                const isWatched = battle.status === 'watched';
+                const statusText = isWatched ? '✓ 已看' : '待看';
+                const statusClass = isWatched ? 'status-watched' : 'status-pending';
+                const nextStatus = isWatched ? 'pending' : 'watched';
+                const nextStatusText = isWatched ? '标记待看' : '标记已看';
+                
+                html += `
+                    <div class="match-card fav-match-card ${isWatched ? 'watched' : ''}">
+                        <div class="match-header">
+                            <span class="match-date">${battle.date || '未知时间'}</span>
+                            <span class="match-result ${resultClass}">${battle.my_result || '-'}</span>
+                            <div class="match-header-right">
+                                ${battle.replay_id ? `<span class="replay-id" onclick="copyToClipboard('${battle.replay_id}', event)" oncontextmenu="return copyToClipboard('${battle.replay_id}', event)" title="点击复制录像码" style="cursor: pointer;">录像: ${battle.replay_id}</span>` : ''}
+                                <div class="fav-actions">
+                                    <button class="fav-status-btn ${statusClass}" onclick="toggleBattleStatus('${battle.replay_id}')" title="${nextStatusText}">${statusText}</button>
+                                    <button class="fav-remove-btn" onclick="removeBattleFavorite('${battle.replay_id}')" title="删除">✕</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="match-body">
+                            <div class="match-player">
+                                <div class="player-avatar">
+                                    ${battle.my_character_image ? `<img src="${battle.my_character_image}" alt="${battle.my_character}" class="character-img" onerror="handleImageError(this, '${battle.my_character || "?"}')">` : `<div class="character-placeholder">${battle.my_character || '?'}</div>`}
+                                </div>
+                                <div class="player-info">
+                                    <div class="player-name-row">
+                                        <span class="match-player-name" oncontextmenu="return copyToClipboard('${battle.player_name || '我'}', event)" title="右键复制名称">${battle.player_name || '我'}</span>
+                                    </div>
+                                    <div class="player-stats-row">
+                                        <span class="detail-item">LP: ${battle.my_lp || '-'}</span>
+                                        <span class="detail-item">${battle.my_league_rank || '-'}</span>
+                                        <span class="detail-item ${battle.my_input_type === '经典' ? 'input-classic' : (battle.my_input_type === '现代' ? 'input-modern' : '')}">${battle.my_input_type || '-'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="match-vs">VS</div>
+                            <div class="match-player">
+                                <div class="player-avatar">
+                                    ${battle.opponent_character_image ? `<img src="${battle.opponent_character_image}" alt="${battle.opponent_character}" class="character-img" onerror="handleImageError(this, '${battle.opponent_character || "?"}')">` : `<div class="character-placeholder">${battle.opponent_character || '?'}</div>`}
+                                </div>
+                                <div class="player-info">
+                                    <div class="player-name-row">
+                                        <span class="match-player-name">${battle.opponent_name || '对手'}</span>
+                                    </div>
+                                    <div class="player-stats-row">
+                                        <span class="detail-item">LP: ${battle.opponent_lp || '-'}</span>
+                                        <span class="detail-item">${battle.opponent_league_rank || '-'}</span>
+                                        <span class="detail-item ${battle.opponent_input_type === '经典' ? 'input-classic' : (battle.opponent_input_type === '现代' ? 'input-modern' : '')}">${battle.opponent_input_type || '-'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="match-footer">
+                            <span class="side-badge">${battle.my_side === 1 ? '1P' : (battle.my_side === 2 ? '2P' : '')}</span>
+                            <span>比分: ${battle.my_round_results || '-'}</span>
+                            ${battle.battle_type ? `<span class="battle-type">${battle.battle_type}</span>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            battlesScrollArea.innerHTML = html;
+        }
+        
+        // 设置收藏筛选
+        function setFavFilter(filter) {
+            favBattleFilter = filter;
+            renderFavoritesPage();
+        }
+        
+        // 切换对局状态（待看/已看）
+        function toggleBattleStatus(replayId) {
+            const battle = favoriteBattles.find(b => b.replay_id === replayId);
+            if (battle) {
+                battle.status = battle.status === 'pending' ? 'watched' : 'pending';
+                saveFavoriteBattles();
+                renderFavoritesPage();
+            }
+        }
+        
+        // 删除收藏对局
+        function removeBattleFavorite(replayId) {
+            const index = favoriteBattles.findIndex(b => b.replay_id === replayId);
+            if (index !== -1) {
+                favoriteBattles.splice(index, 1);
+                saveFavoriteBattles();
+                renderFavoritesPage();
+            }
         }
         
         // ========== 历史搜索和收藏功能 ==========
@@ -4699,7 +5083,10 @@
                             <div class="match-header">
                                 <span class="match-date">${record.date || '未知时间'}</span>
                                 <span class="match-result ${resultClass}">${resultText}</span>
-                                ${record.replay_id ? `<span class="replay-id" onclick="copyToClipboard('${record.replay_id}', event)" title="点击复制录像码" style="cursor: pointer;">录像: ${record.replay_id}</span>` : ''}
+                                <div class="match-header-right">
+                                    ${record.replay_id ? `<span class="replay-id" onclick="copyToClipboard('${record.replay_id}', event)" oncontextmenu="return copyToClipboard('${record.replay_id}', event)" title="点击复制录像码" style="cursor: pointer;">录像: ${record.replay_id}</span>` : ''}
+                                    <button class="fav-star-btn ${isBattleFavorited(record.replay_id) ? 'active' : ''}" onclick="toggleBattleFavoriteById('${record.replay_id}')" title="${isBattleFavorited(record.replay_id) ? '取消收藏' : '收藏对局'}">${isBattleFavorited(record.replay_id) ? '★' : '☆'}</button>
+                                </div>
                             </div>
                             <div class="match-body">
                                 <div class="match-player">
@@ -4708,8 +5095,8 @@
                                     </div>
                                     <div class="player-info">
                                         <div class="player-name-row">
-                                            <span class="match-player-name">${record.player_name || '我'}</span>
-                                            ${record.my_short_id ? `<span class="player-id" onclick="queryPlayerById('${record.my_user_id}', event)">(${record.my_short_id})</span>` : ''}
+                                            <span class="match-player-name" oncontextmenu="return copyToClipboard('${record.player_name || '我'}', event)" title="右键复制名称">${record.player_name || '我'}</span>
+                                            ${record.my_short_id ? `<span class="player-id" onclick="queryPlayerById('${record.my_user_id}', event)" oncontextmenu="return copyToClipboard('${record.my_short_id}', event)" title="左键查询，右键复制ID">(${record.my_short_id})</span>` : ''}
                                         </div>
                                         <div class="player-stats-row">
                                             <span class="detail-item">LP: ${record.my_lp || '-'}</span>
@@ -5275,7 +5662,6 @@
                     // 更新用户信息
                     if (data.user_info) {
                         currentUserInfo = data.user_info;
-                        console.log('更新用户信息:', currentUserInfo);
                         updateLoginStatus();
                     } else {
                         console.warn('后端未返回 user_info');
@@ -5283,9 +5669,8 @@
                     // 保存玩家资料
                     if (data.player_profile) {
                         playerProfile = data.player_profile;
-                        console.log('更新玩家资料:', playerProfile);
                     } else {
-                        console.log('未收到玩家资料');
+                        console.warn('未收到玩家资料');
                     }
                     
                     // 保存到主页数据缓存

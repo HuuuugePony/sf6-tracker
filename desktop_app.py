@@ -84,7 +84,6 @@ def load_desktop_styles(window):
             var style = document.createElement('style');
             style.textContent = `{css_content}`;
             document.head.appendChild(style);
-            console.log('Desktop styles loaded');
         ''')
 
 
@@ -148,8 +147,8 @@ def main():
         url=page_url,
         width=1024,
         height=768,
-        min_size=(800, 600),
-        resizable=False,
+        min_size=(900, 650),
+        resizable=True,
         fullscreen=False,
         frameless=False,
         easy_drag=True,
