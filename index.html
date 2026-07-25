@@ -2586,6 +2586,7 @@
         }
         .fav-star-btn.active {
             opacity: 1;
+            color: #f39c12;
         }
         .fav-filter-bar {
             display: flex;
@@ -3002,6 +3003,9 @@
                     tab.classList.add('active');
                 }
             });
+            
+            // 同步更新lastActiveTab，确保从排行榜等其他页面跳转过来时收藏按钮能正常重渲染
+            lastActiveTab = 'query';
             
             // 如果没有cookie,先提示登录
             if (!cookie) {
@@ -4571,7 +4575,7 @@
             
             // 重新渲染当前战绩列表以更新星标状态
             if (lastActiveTab === 'home' || lastActiveTab === 'query') {
-                renderMatchCards();
+                renderContent();
             }
         }
         
