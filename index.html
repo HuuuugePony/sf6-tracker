@@ -3855,6 +3855,20 @@
         body.sf6-theme .fighters-refresh-btn { background: rgba(0, 195, 255, 0.08) !important; border-color: rgba(0, 195, 255, 0.22) !important; }
         body.sf6-theme .chart-toggle-btn:disabled { background: rgba(0, 195, 255, 0.04) !important; color: #54628a !important; }
 
+        /* 经典/现代操作标签：保留官方紫/橙配色，不参与蓝化 */
+        body.sf6-theme .detail-item.input-classic {
+            background: rgb(147, 35, 234) !important;
+            color: white !important;
+            border: none !important;
+            text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000 !important;
+        }
+        body.sf6-theme .detail-item.input-modern {
+            background: rgb(220, 92, 17) !important;
+            color: white !important;
+            border: none !important;
+            text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000 !important;
+        }
+
         /* 列表斑马纹与分隔 */
         body.sf6-theme .gauge-rate-list li:nth-child(odd),
         body.sf6-theme .battle-dl dd ul li:nth-child(odd),
