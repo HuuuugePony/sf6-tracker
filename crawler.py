@@ -586,6 +586,7 @@ class SF6BattleLogCrawler:
                 'my_user_id': str(me.get('short_id', '')),  # 用于查询的用户ID（short_id）
                 'my_input_type': me.get('input_type', ''),  # 已经是翻译后的中文
                 'my_round_results': self._format_round_results(me.get('round_results', [])),  # 格式化回合结果
+                'my_round_results_raw': me.get('round_results', []),  # 原始回合结果数组（0=负，1-8=不同胜法，对应官方icon_result{n}图标）
                 'opponent_name': opponent['name'],
                 'opponent_short_id': opponent.get('short_id', 0),
                 'opponent_user_id': str(opponent.get('short_id', '')),  # 对手用于查询的用户ID（short_id）
@@ -598,6 +599,7 @@ class SF6BattleLogCrawler:
                 'opponent_league_rank': opponent.get('league_rank_display', '-'),  # 使用格式化后的段位显示
                 'opponent_input_type': opponent.get('input_type', ''),  # 已经是翻译后的中文
                 'opponent_round_results': self._format_round_results(opponent.get('round_results', [])),  # 格式化回合结果
+                'opponent_round_results_raw': opponent.get('round_results', []),  # 原始回合结果数组
                 'battle_type': battle.get('battle_type', ''),
                 'views': battle.get('views', 0),
             })

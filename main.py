@@ -69,6 +69,21 @@ class RankingRequest(BaseModel):
     cookie: str = None  # 可选的cookie参数
 
 
+class FightersListRequest(BaseModel):
+    """格斗圈（朋友/关注）列表请求"""
+    list_type: str = 'friend'  # 列表类型: friend=朋友, follow=关注
+    page: int = 1  # 页码
+    order_type: str = 'gamemode'  # 排序类型: gamemode/league_rank/registered/last_play
+    order_order: int = 0  # 排序方向: 0/1
+    cookie: str = None  # 可选的cookie参数
+
+
+class CharactersRequest(BaseModel):
+    """角色列表自动更新请求"""
+    cookie: str = None  # 可选的cookie参数
+    force_refresh: bool = False  # 是否忽略缓存强制刷新
+
+
 # ==================== API 接口 ====================
 
 @app.get("/", response_class=HTMLResponse)
@@ -513,6 +528,320 @@ def get_ranking(request: RankingRequest):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取排行榜失败: {str(e)}")
+
+
+@app.post("/api/fighters-list")
+def get_fighters_list(request: FightersListRequest):
+    """获取格斗圈列表数据（朋友/关注）"""
+    global query_crawler
+
+    try:
+        start_time = time.time()
+
+        # 校验列表类型
+        if request.list_type not in ('friend', 'follow'):
+            raise HTTPException(status_code=400, detail="list_type 仅支持 friend/follow")
+
+        # 校验排序参数
+        valid_order_types = ('gamemode', 'league_rank', 'registered', 'last_play')
+        if request.order_type not in valid_order_types:
+            raise HTTPException(status_code=400, detail=f"order_type 仅支持 {'/'.join(valid_order_types)}")
+        if request.order_order not in (0, 1):
+            raise HTTPException(status_code=400, detail="order_order 仅支持 0/1")
+
+        # 优先使用请求中的cookie
+        cookie_to_use = None
+        if request.cookie:
+            cookie_to_use = request.cookie
+        elif stored_cookie:
+            cookie_to_use = stored_cookie
+
+        if not cookie_to_use:
+            raise HTTPException(status_code=403, detail="格斗圈列表需要登录后才能查看，请先登录")
+
+        # 复用查询爬虫实例，但每次及时刷新build_id（官网发布新版后build_id会变，过期会导致数据异常）
+        if query_crawler is None or query_crawler.headers.get('cookie') != cookie_to_use:
+            query_crawler = SF6BattleLogCrawler(cookie=cookie_to_use)
+        try:
+            fresh_build_id = query_crawler.fetch_build_id()
+            if fresh_build_id:
+                query_crawler.build_id = fresh_build_id
+        except Exception:
+            pass  # 刷新失败时继续使用现有build_id
+
+        # 构造格斗圈列表API URL（与官网一致：第1页仅order_type/order_order，翻页才带page）
+        # 朋友: {api_base_url}/{build_id}/{lang}/fighterslist/friend.json
+        # 关注: {api_base_url}/{build_id}/{lang}/fighterslist/follow.json
+        page_param = f'&page={request.page}' if request.page > 1 else ''
+        url = (
+            f'{query_crawler.api_base_url}/{query_crawler.build_id}/{query_crawler.lang}/fighterslist/{request.list_type}.json'
+            f'?order_type={request.order_type}'
+            f'&order_order={request.order_order}'
+            f'{page_param}'
+        )
+
+        response = query_crawler.session.get(url, timeout=10)
+
+        # build_id过期时官网返回404：及时重新获取build_id并重试一次
+        if response.status_code == 404:
+            print(f'[格斗圈-{request.list_type}] 404，build_id可能过期，重新获取后重试')
+            query_crawler.build_id = query_crawler.fetch_build_id()
+            url = (
+                f'{query_crawler.api_base_url}/{query_crawler.build_id}/{query_crawler.lang}/fighterslist/{request.list_type}.json'
+                f'?order_type={request.order_type}'
+                f'&order_order={request.order_order}'
+                f'{page_param}'
+            )
+            response = query_crawler.session.get(url, timeout=10)
+
+        # 尝试解析JSON（403时也可能有JSON响应）
+        try:
+            data = response.json()
+        except Exception:
+            if response.status_code == 403:
+                raise HTTPException(status_code=403, detail="格斗圈列表需要登录后才能查看，请先登录")
+            response.raise_for_status()
+            return {"success": False}
+
+        # 提取pageProps中的列表数据
+        page_props = data.get('pageProps', {})
+
+        # 检查是否为403未登录状态（HTTP 403 或 pageProps内statusCode=403）
+        common = page_props.get('common', {})
+        if response.status_code == 403 or common.get('statusCode') == 403:
+            raise HTTPException(status_code=403, detail="格斗圈列表需要登录后才能查看，请先登录")
+
+        if response.status_code != 200:
+            raise HTTPException(status_code=response.status_code, detail=f"格斗圈API返回异常状态: {response.status_code}")
+
+        # 提取列表数据（真实字段：朋友=friend_list，关注=followed_fighter_banner_list，均直接位于pageProps顶层）
+        fighter_list = []
+        pagination = {"current_page": page_props.get('page', request.page)}
+
+        list_keys = (
+            'followed_fighter_banner_list',  # 关注列表真实字段
+            'friend_list',                   # 朋友列表真实字段
+            'fighter_list', 'follow_list', 'list'
+        )
+        for key in list_keys:
+            if isinstance(page_props.get(key), list):
+                fighter_list = page_props[key]
+                break
+
+        elapsed = time.time() - start_time
+        print(f'[格斗圈-{request.list_type}] 耗时: {elapsed:.2f}s, 数量: {len(fighter_list)}')
+
+        return {
+            "success": True,
+            "list_type": request.list_type,
+            "data": page_props,
+            "fighter_list": fighter_list,
+            "pagination": pagination
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"获取格斗圈列表失败: {str(e)}")
+
+
+# ==================== 角色列表自动更新 ====================
+
+# 已知角色 tool名 → 数字ID 映射（新角色通过排行榜接口自动补全）
+KNOWN_CHARACTER_IDS = {
+    'ryu': 1, 'luke': 2, 'kimberly': 3, 'chunli': 4, 'manon': 5, 'zangief': 6,
+    'jp': 7, 'dhalsim': 8, 'cammy': 9, 'ken': 10, 'deejay': 11, 'lily': 12,
+    'aki': 13, 'rashid': 14, 'blanka': 15, 'juri': 16, 'marisa': 17, 'guile': 18,
+    'ed': 19, 'honda': 20, 'jamie': 21, 'gouki': 22, 'sagat': 25, 'vega': 26,
+    'terry': 27, 'mai': 28, 'elena': 29, 'cviper': 30, 'alex': 31, 'ingrid': 32,
+}
+
+CHARACTERS_CACHE_TTL = 24 * 3600  # 缓存24小时
+
+
+def get_writable_path():
+    """获取可写目录（打包后为exe所在目录，开发时为项目目录）"""
+    if getattr(sys, 'frozen', False):
+        return os.path.dirname(sys.executable)
+    return os.path.dirname(os.path.abspath(__file__))
+
+
+CHARACTERS_CACHE_FILE = os.path.join(get_writable_path(), 'characters_cache.json')
+
+
+def _load_characters_cache():
+    """读取角色列表本地缓存"""
+    try:
+        import json
+        with open(CHARACTERS_CACHE_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception:
+        return None
+
+
+def _save_characters_cache(data):
+    """写入角色列表本地缓存"""
+    try:
+        import json
+        with open(CHARACTERS_CACHE_FILE, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False)
+    except Exception as e:
+        print(f'[角色列表] 缓存写入失败: {e}')
+
+
+def _fetch_numeric_character_id(crawler, tool):
+    """通过特定角色排行榜查询获取新角色的数字ID（取榜内首条玩家的character_id）"""
+    try:
+        url = (
+            f'{crawler.api_base_url}/{crawler.build_id}/{crawler.lang}/ranking/master.json'
+            f'?character_filter=4&character_id={tool}&page=1'
+        )
+        resp = crawler.session.get(url, timeout=10)
+        data = resp.json()
+        flist = data.get('pageProps', {}).get('master_rating_ranking', {}).get('ranking_fighter_list', [])
+        if flist:
+            cid = flist[0].get('character_id')
+            if isinstance(cid, int):
+                return cid
+    except Exception as e:
+        print(f'[角色列表] 查询角色{tool}数字ID失败: {e}')
+    return None
+
+
+@app.post("/api/characters")
+def get_characters(request: CharactersRequest):
+    """获取最新官方角色列表（自动发现新角色）
+    数据源：排行榜API的 pageProps.character_id 数组（完整角色清单，含中文名/工具名/排序）
+    """
+    global query_crawler
+
+    try:
+        start_time = time.time()
+
+        # 缓存未过期且非强制刷新时直接返回
+        cached = _load_characters_cache()
+        if cached and not request.force_refresh:
+            age = time.time() - cached.get('fetched_at', 0)
+            if age < CHARACTERS_CACHE_TTL and cached.get('characters'):
+                return {
+                    "success": True,
+                    "characters": cached['characters'],
+                    "updated_at": cached.get('updated_at'),
+                    "from_cache": True
+                }
+
+        # 优先使用请求中的cookie
+        cookie_to_use = None
+        if request.cookie:
+            cookie_to_use = request.cookie
+        elif stored_cookie:
+            cookie_to_use = stored_cookie
+
+        if not cookie_to_use:
+            # 未登录时若有缓存则降级返回缓存
+            if cached and cached.get('characters'):
+                return {
+                    "success": True,
+                    "characters": cached['characters'],
+                    "updated_at": cached.get('updated_at'),
+                    "from_cache": True
+                }
+            raise HTTPException(status_code=403, detail="角色列表需要登录后才能获取，请先登录")
+
+        # 复用查询爬虫实例，并刷新build_id
+        if query_crawler is None or query_crawler.headers.get('cookie') != cookie_to_use:
+            query_crawler = SF6BattleLogCrawler(cookie=cookie_to_use)
+        try:
+            fresh_build_id = query_crawler.fetch_build_id()
+            if fresh_build_id:
+                query_crawler.build_id = fresh_build_id
+        except Exception:
+            pass
+
+        # 拉取排行榜（全角色筛选）获取完整角色清单
+        url = (
+            f'{query_crawler.api_base_url}/{query_crawler.build_id}/{query_crawler.lang}/ranking/master.json'
+            f'?character_filter=1&page=1'
+        )
+        response = query_crawler.session.get(url, timeout=10)
+
+        # build_id过期时返回404：重新获取后重试一次
+        if response.status_code == 404:
+            print('[角色列表] 404，build_id可能过期，重新获取后重试')
+            query_crawler.build_id = query_crawler.fetch_build_id()
+            response = query_crawler.session.get(url, timeout=10)
+
+        try:
+            data = response.json()
+        except Exception:
+            if response.status_code == 403:
+                raise HTTPException(status_code=403, detail="角色列表需要登录后才能获取，请先登录")
+            response.raise_for_status()
+            return {"success": False}
+
+        page_props = data.get('pageProps', {})
+        common = page_props.get('common', {})
+        if response.status_code == 403 or common.get('statusCode') == 403:
+            raise HTTPException(status_code=403, detail="角色列表需要登录后才能获取，请先登录")
+        if response.status_code != 200:
+            raise HTTPException(status_code=response.status_code, detail=f"角色列表API返回异常状态: {response.status_code}")
+
+        char_options = page_props.get('character_id', [])
+        if not isinstance(char_options, list) or not char_options:
+            # 拉取失败时降级返回缓存
+            if cached and cached.get('characters'):
+                return {
+                    "success": True,
+                    "characters": cached['characters'],
+                    "updated_at": cached.get('updated_at'),
+                    "from_cache": True
+                }
+            raise HTTPException(status_code=500, detail="未获取到官方角色清单")
+
+        # 组装角色列表（排除"随机"选项 tool_name=random）
+        characters = []
+        for item in char_options:
+            tool = item.get('tool_name') or item.get('value') or ''
+            if not tool or tool == 'random':
+                continue
+            name = item.get('label') or tool
+            char_id = KNOWN_CHARACTER_IDS.get(tool)
+            if char_id is None:
+                # 新角色：通过特定角色排行榜查询数字ID
+                char_id = _fetch_numeric_character_id(query_crawler, tool)
+                print(f'[角色列表] 发现新角色 {tool}({name})，数字ID={char_id}')
+            characters.append({
+                "id": char_id,
+                "name": name,
+                "tool": tool,
+                "sort": item.get('sort', 999)
+            })
+
+        characters.sort(key=lambda c: c.get('sort', 999))
+        for c in characters:
+            c.pop('sort', None)
+
+        updated_at = int(time.time())
+        _save_characters_cache({
+            "fetched_at": time.time(),
+            "updated_at": updated_at,
+            "characters": characters
+        })
+
+        elapsed = time.time() - start_time
+        print(f'[角色列表] 耗时: {elapsed:.2f}s, 数量: {len(characters)}')
+
+        return {
+            "success": True,
+            "characters": characters,
+            "updated_at": updated_at,
+            "from_cache": False
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"获取角色列表失败: {str(e)}")
 
 
 if __name__ == "__main__":
