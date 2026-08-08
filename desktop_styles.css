@@ -275,10 +275,12 @@ body.light-theme .section h2 {
     border-bottom-color: #dee2e6 !important;
 }
 body.light-theme .fixed-nav-section {
-    background: #ffffff !important;
+    /* 与 index.html 保持一致：固定区透明，不产生直角底色块 */
+    background: transparent !important;
 }
 body.light-theme .sub-nav {
-    background: #f8f9fa !important;
+    background: #f1f3f5 !important;
+    border-top-color: #dee2e6 !important;
     border-bottom-color: #dee2e6 !important;
 }
 body.light-theme .match-card {
@@ -337,6 +339,17 @@ body.light-theme .profile-player-name { color: #666 !important; }
 body.light-theme .stat-item {
     background: #f8f9fa !important; border-color: #dee2e6 !important;
 }
+/* 时间统计卡：压掉上面通用 stat-item 规则，与 index.html 主题色保持一致 */
+body.light-theme .stat-item.stat-time {
+    background: rgba(41,128,185,0.06) !important;
+    border-color: rgba(41,128,185,0.25) !important;
+}
+body.light-theme .stat-item.stat-time .stat-value { color: #2980b9 !important; }
+body.sf6-theme .stat-item.stat-time {
+    background: rgba(0,195,255,0.08) !important;
+    border-color: rgba(0,195,255,0.3) !important;
+}
+body.sf6-theme .stat-item.stat-time .stat-value { color: #00c3ff !important; }
 body.light-theme .stat-label { color: #888 !important; }
 body.light-theme .stat-value { color: #333 !important; }
 body.light-theme .chart-section {
@@ -390,7 +403,14 @@ body.light-theme .rival-char-checkbox.checked {
 body.light-theme .rival-winrate-table th {
     background: #f0f2f5 !important; color: #666 !important;
 }
-body.light-theme .rival-winrate-table td { color: #555 !important; }
+body.light-theme .rival-winrate-table td {
+    color: #555 !important;
+    background: transparent !important;  /* 压掉通用暗色 tr 规则，避免亮色主题下表格行发黑 */
+}
+body.light-theme tr:nth-child(even),
+body.light-theme tr:hover {
+    background: transparent !important;
+}
 body.light-theme .rival-winrate-table th,
 body.light-theme .rival-winrate-table td {
     border-bottom-color: #dee2e6 !important;
@@ -462,6 +482,23 @@ body.light-theme button {
 }
 body.light-theme button:hover {
     background: linear-gradient(135deg, #dee2e6 0%, #ced4da 100%) !important;
+}
+/* 对战报告周期按钮（今天/本周/本赛季）：上面通用 button 规则带 !important，
+   会把 index.html 中的选中态盖平，这里补上带 !important 的对齐规则 */
+body.light-theme .report-period-btn {
+    background: rgba(0,0,0,0.04) !important;
+    color: #666 !important;
+    border-color: rgba(0,0,0,0.1) !important;
+}
+body.light-theme .report-period-btn:hover {
+    background: rgba(0,0,0,0.08) !important;
+    color: #222 !important;
+}
+body.light-theme .report-period-btn.active {
+    background: rgba(0,0,0,0.08) !important;
+    color: #111 !important;
+    border-color: rgba(0,0,0,0.2) !important;
+    font-weight: 600 !important;
 }
 body.light-theme .refresh-btn,
 body.light-theme .refresh-btn:hover {
@@ -693,111 +730,19 @@ body.light-theme .fav-filter-bar {
     border-bottom-color: #dee2e6 !important;
 }
 
-/* ==================== 春丽主题 - 桌面端覆盖 ==================== */
+/* ==================== 春丽主题 - 桌面端适配 ==================== */
+/* 桌面端 .container 铺满整个窗口，会遮住 body 背景与 body::before 条纹，
+   因此把主题背景、光效与条纹合并到 container 自身背景上，保证与浏览器端观感一致 */
+body.sf6-theme {
+    background: #080d1c !important;
+}
 body.sf6-theme .container {
-    background: linear-gradient(150deg, #0e1834 0%, #0a1128 60%, #0b1430 100%) !important;
+    background:
+        repeating-linear-gradient(115deg, transparent 0 46px, rgba(0, 195, 255, 0.025) 46px 48px),
+        radial-gradient(1200px 500px at 75% -10%, rgba(0, 168, 255, 0.14), transparent 60%),
+        radial-gradient(900px 500px at 10% 110%, rgba(255, 212, 0, 0.06), transparent 55%),
+        linear-gradient(150deg, #0e1834 0%, #0a1128 60%, #0b1430 100%) !important;
 }
-body.sf6-theme .header {
-    background: linear-gradient(120deg, #0c1631 0%, #123061 55%, #0c1631 100%) !important;
-    border-bottom: 1px solid rgba(0,195,255,0.35) !important;
+body.sf6-theme .content-area {
+    background: transparent !important;
 }
-body.sf6-theme .header h1 { color: #ffffff !important; }
-body.sf6-theme .sidebar {
-    background: linear-gradient(180deg, #0a1226 0%, #070d1c 100%) !important;
-    border-right: 1px solid rgba(0,195,255,0.14) !important;
-}
-body.sf6-theme .sidebar-tab:hover {
-    background: rgba(0,195,255,0.09) !important; color: #dbe7ff !important;
-}
-body.sf6-theme .sidebar-tab.active {
-    background: linear-gradient(90deg, rgba(0,195,255,0.20) 0%, rgba(0,195,255,0.05) 100%) !important;
-    color: #ffffff !important;
-}
-body.sf6-theme .content-area { background: #0a1128 !important; }
-body.sf6-theme .section {
-    background: linear-gradient(150deg, #12214a 0%, #0d1730 100%) !important;
-    border: 1px solid rgba(0,195,255,0.22) !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.35) !important;
-}
-body.sf6-theme .section h2 {
-    color: #ffffff !important;
-    border-bottom-color: rgba(0,195,255,0.2) !important;
-}
-body.sf6-theme input,
-body.sf6-theme select,
-body.sf6-theme textarea {
-    background: rgba(9,15,34,0.6) !important;
-    color: #dbe7ff !important;
-    border-color: rgba(0,195,255,0.25) !important;
-}
-body.sf6-theme input:focus,
-body.sf6-theme select:focus,
-body.sf6-theme textarea:focus {
-    border-color: #00c3ff !important;
-    box-shadow: 0 0 0 3px rgba(0,195,255,0.12) !important;
-}
-body.sf6-theme th {
-    background: #0d1730 !important;
-    color: #9db1d6 !important;
-}
-body.sf6-theme th,
-body.sf6-theme td {
-    border-color: rgba(0,195,255,0.12) !important;
-}
-body.sf6-theme tr:nth-child(even) { background: rgba(9,15,34,0.5) !important; }
-body.sf6-theme tr:hover { background: rgba(0,195,255,0.08) !important; }
-body.sf6-theme .login-modal-content,
-body.sf6-theme .modal-content {
-    background: linear-gradient(150deg, #12214a 0%, #0d1730 100%) !important;
-    border-color: rgba(0,195,255,0.25) !important;
-}
-body.sf6-theme a { color: #9db1d6 !important; }
-body.sf6-theme a:hover { color: #ffd400 !important; }
-/* 通用按钮：宝蓝渐变（覆盖本文件暗色默认与页面灰色按钮） */
-body.sf6-theme button {
-    background: linear-gradient(135deg, #0e2a5e 0%, #14418f 100%) !important;
-    border-color: rgba(0,195,255,0.28) !important;
-    color: #dbe7ff !important;
-}
-body.sf6-theme button:hover:not(:disabled) {
-    background: linear-gradient(135deg, #14418f 0%, #1c56b8 100%) !important;
-    border-color: rgba(0,195,255,0.55) !important;
-    box-shadow: 0 2px 10px rgba(0,120,255,0.3) !important;
-}
-body.sf6-theme button:disabled {
-    background: #0a1330 !important;
-    color: #54628a !important;
-}
-body.sf6-theme button:focus {
-    box-shadow: 0 0 0 2px rgba(0,195,255,0.25) !important;
-}
-/* 固定导航区/卡片/面板 */
-body.sf6-theme .fixed-nav-section { background: #0c1430 !important; }
-body.sf6-theme .match-card {
-    background: linear-gradient(150deg, #13234e 0%, #0d1730 100%) !important;
-    border-color: rgba(0,195,255,0.18) !important;
-}
-body.sf6-theme .match-card:hover {
-    border-color: rgba(0,195,255,0.45) !important;
-    box-shadow: 0 4px 14px rgba(0,120,255,0.25) !important;
-}
-body.sf6-theme .player-profile-section {
-    background: linear-gradient(150deg, #12214a 0%, #0d1730 100%) !important;
-    border-color: rgba(0,195,255,0.22) !important;
-}
-body.sf6-theme .settings-item {
-    background: rgba(0,195,255,0.05) !important;
-    border-color: rgba(0,195,255,0.15) !important;
-}
-body.sf6-theme .settings-panel h2 {
-    color: #ffffff !important;
-    border-bottom-color: rgba(0,195,255,0.2) !important;
-}
-body.sf6-theme .settings-item-label { color: #dbe7ff !important; }
-body.sf6-theme .version-badge {
-    background: rgba(0,195,255,0.08) !important;
-    color: #9db1d6 !important;
-}
-body.sf6-theme .sub-nav { background: rgba(7,12,26,0.5) !important; }
-body.sf6-theme .fav-filter-bar { border-bottom-color: rgba(0,195,255,0.15) !important; }
-body.sf6-theme ::selection { background: rgba(0,195,255,0.3); color: #fff; }

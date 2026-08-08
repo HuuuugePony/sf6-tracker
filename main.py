@@ -233,20 +233,42 @@ def login_with_cookie(request: dict):
         # 用前端传来的user_id或已存储的user_info，直接采集验证
         test_user_id = request.get('user_id') or user_info.get('user_id')
         
-        if not test_user_id:
-            raise HTTPException(status_code=400, detail="缺少用户ID，无法验证Cookie")
-        
-        # 直接采集对战数据验证（能采到就是有效的）
-        try:
-            test_crawler = SF6BattleLogCrawler(cookie=cookie_string)
-            test_crawler.set_user_id(test_user_id)
-            page_data = test_crawler.fetch_page(page=1)
-            battles, battle_user_info = test_crawler.parse_battles_from_json(page_data)
-            extracted_user_id = battle_user_info.get('user_id') or str(test_user_id)
-            extracted_player_name = battle_user_info.get('player_name') or user_info.get('player_name', '')
-            print(f'✓ 采集验证通过: {extracted_player_name}({extracted_user_id})')
-        except Exception as e:
-            raise HTTPException(status_code=401, detail=f"Cookie已失效（{e}），请重新获取")
+        if test_user_id:
+            # 已知用户ID：直接采集对战数据验证（能采到就是有效的）
+            try:
+                test_crawler = SF6BattleLogCrawler(cookie=cookie_string)
+                test_crawler.set_user_id(test_user_id)
+                page_data = test_crawler.fetch_page(page=1)
+                battles, battle_user_info = test_crawler.parse_battles_from_json(page_data)
+                extracted_user_id = battle_user_info.get('user_id') or str(test_user_id)
+                extracted_player_name = battle_user_info.get('player_name') or user_info.get('player_name', '')
+                print(f'✓ 采集验证通过: {extracted_player_name}({extracted_user_id})')
+            except Exception as e:
+                raise HTTPException(status_code=401, detail=f"Cookie已失效（{e}），请重新获取")
+        else:
+            # 首次Cookie登录（无用户ID）：请求排行榜接口验证登录态，并从loginUser提取本人信息
+            try:
+                test_crawler = SF6BattleLogCrawler(cookie=cookie_string)
+                ranking_url = (
+                    f'{test_crawler.api_base_url}/{test_crawler.build_id}/{test_crawler.lang}/ranking/master.json'
+                    f'?character_filter=4&character_id=chunli&platform=1&home_filter=1'
+                    f'&home_category_id=0&home_id=0&page=1&season_type=1'
+                )
+                response = test_crawler.session.get(ranking_url, timeout=10)
+                if response.status_code == 403:
+                    raise HTTPException(status_code=401, detail="Cookie无效或已过期（未检测到登录状态），请重新获取")
+                # 不检查状态码：即使参数异常返回400，响应中仍携带loginUser可用于验证
+                common = response.json().get('pageProps', {}).get('common', {})
+                login_user = common.get('loginUser') or {}
+                if not login_user.get('flg') or not login_user.get('shortId'):
+                    raise HTTPException(status_code=401, detail="Cookie无效或已过期（未检测到登录状态），请重新获取")
+                extracted_user_id = str(login_user.get('shortId'))
+                extracted_player_name = login_user.get('fighterId') or ''
+                print(f'✓ 排行榜验证通过: {extracted_player_name}({extracted_user_id})')
+            except HTTPException:
+                raise
+            except Exception as e:
+                raise HTTPException(status_code=401, detail=f"Cookie已失效（{e}），请重新获取")
         
         if not extracted_user_id:
             raise HTTPException(status_code=401, detail="Cookie无效或已过期，无法采集数据")
