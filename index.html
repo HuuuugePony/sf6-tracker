@@ -378,7 +378,7 @@
         .status {
             padding: 10px 14px;
             border-radius: 8px;
-            margin-top: 10px;
+            margin: 10px 12px 0 12px;
             font-size: 12px;
             line-height: 1.5;
             border: 1px solid;
@@ -860,8 +860,9 @@
         /* 筛选栏最右侧的刷新按钮：尺寸与左侧筛选按钮一致 */
         .fighters-refresh-btn {
             margin-left: auto;
-            padding: 7px 18px;
-            font-size: 13px;
+            height: 28px;
+            padding: 0 12px;
+            font-size: 12px;
             background: rgba(255,255,255,0.03);
             color: #999999;
             border: 1px solid rgba(255,255,255,0.08);
@@ -939,9 +940,9 @@
         .sub-nav {
             display: flex;
             gap: 6px;
-            margin-bottom: 10px;
-            /* 上下对称内边距 + 上下各一条细分隔线；带内铺一层中性底灰，与页面底色区分开 */
-            padding: 8px 0;
+            margin: 8px 0;
+            /* 水平内边距 + 上下适度留白；带内铺一层中性底灰，与页面底色区分开 */
+            padding: 4px 12px;
             background: #1a1a1a;
             border-top: 1px solid rgba(255,255,255,0.07);
             border-bottom: 1px solid rgba(255,255,255,0.07);
@@ -1852,9 +1853,9 @@
         
         .fixed-nav-section {
             flex-shrink: 0;
-            /* 不铺底色：唯一卡片是玩家信息卡，导航胶囊直接浮在页面底色上 */
+            margin: 0;
+            padding: 0;
             background: transparent;
-            z-index: 10;
         }
         
         .battles-scroll-area {
@@ -1864,36 +1865,73 @@
             position: relative;
         }
         
-        /* ========== 查询页面样式 ========== */
-        .query-container {
-            padding: 20px;
-            max-width: 800px;
-            margin: 0 auto;
+        /* ========== 统一导航面板（排行榜/格斗圈/查询/收藏对局共用模板） ========== */
+        .nav-panel {
+            padding: 0;
         }
         
-        .query-container h2 {
+        .nav-panel > h2 {
             color: #ffffff;
-            font-size: 1.3em;
-            margin-bottom: 20px;
+            font-size: 1em;
+            font-weight: 600;
+            margin: 0;
+            padding: 0 12px 6px 12px;
             border-bottom: 1px solid rgba(255,255,255,0.08);
-            padding-bottom: 12px;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+        }
+        
+        /* 收缩/展开箭头 */
+        .nav-panel > h2::after {
+            content: '▾';
+            margin-left: auto;
+            font-size: 10px;
+            color: #666666;
+            transition: transform 0.2s ease;
+        }
+        
+        .nav-panel.collapsed > h2::after {
+            transform: rotate(-90deg);
+        }
+        
+        .nav-panel.collapsed > h2 {
+            margin-bottom: 0;
+            border-bottom-color: transparent;
+        }
+        
+        .nav-panel-body {
+            overflow: hidden;
+            transition: max-height 0.25s ease;
+        }
+        
+        .nav-panel.collapsed .nav-panel-body {
+            display: none;
+        }
+        
+        /* ========== 查询页面样式 ========== */
+        .query-container {
+            max-width: 800px;
+            margin: 0 auto;
         }
         
         /* 搜索栏 */
         .search-bar {
             display: flex;
             gap: 10px;
-            margin-bottom: 25px;
+            margin-bottom: 16px;
+            padding: 0 12px;
         }
         
         .search-bar input {
             flex: 1;
-            padding: 12px 18px;
-            font-size: 14px;
+            padding: 8px 14px;
+            font-size: 13px;
             border: 1px solid rgba(255,255,255,0.08);
             background: rgba(0,0,0,0.3);
             color: #ffffff;
-            border-radius: 10px;
+            border-radius: 8px;
             box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
@@ -1905,12 +1943,12 @@
         }
         
         .search-btn {
-            padding: 12px 34px;
-            font-size: 14px;
+            padding: 8px 24px;
+            font-size: 13px;
             font-weight: 600;
             background: linear-gradient(135deg, #2a2a2a 0%, #3a3a3a 100%);
             border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 10px;
+            border-radius: 8px;
             cursor: pointer;
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
@@ -1939,8 +1977,8 @@
         /* 收藏和列表区域 */
         .favorites-section,
         .history-section {
-            margin-bottom: 25px;
-            padding: 18px;
+            margin: 0 12px 16px 12px;
+            padding: 14px;
             background: linear-gradient(145deg, #1a1a1a 0%, #181818 100%);
             border: 1px solid rgba(255,255,255,0.06);
             border-radius: 10px;
@@ -2179,52 +2217,24 @@
         }
         
         /* ==================== 排行榜样式 ==================== */
-        .ranking-container {
-            padding: 15px 20px;
-        }
-        
-        .ranking-container h2 {
-            color: #ffffff;
-            font-size: 1.2em;
-            margin-bottom: 12px;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-            padding-bottom: 10px;
-        }
-        
         .ranking-filters {
             display: flex;
             align-items: center;
             gap: 12px;
             flex-wrap: wrap;
+            margin: 0 0 8px 0;
+            padding: 0 12px 0 0;
         }
         
-        /* 排行榜筛选栏内的角色选择按钮：与地区按钮尺寸保持一致（固定高度，选中后尺寸不变） */
-        .ranking-filters .char-picker-trigger {
-            padding: 0 14px;
-            height: 38px;
-            font-size: 13px;
-            border-radius: 8px;
-        }
-        .ranking-filters .char-picker-trigger-img {
-            width: 24px;
-            height: 24px;
+        /* 筛选栏内小号按钮（与之前二级导航内尺寸一致） */
+        .ranking-filters .ranking-region-btn {
+            padding: 4px 12px;
+            font-size: 12px;
         }
         
-        .ranking-select {
-            padding: 7px 14px;
-            font-size: 13px;
-            border: 1px solid rgba(255,255,255,0.08);
-            background: rgba(0,0,0,0.3);
-            color: #ffffff;
-            border-radius: 8px;
-            cursor: pointer;
-            min-width: 100px;
-            transition: all 0.2s;
-        }
-        
-        .ranking-select:focus {
-            outline: none;
-            border-color: rgba(255,255,255,0.15);
+        /* 排行榜/统计内容区 */
+        .ranking-content {
+            padding: 0 0 12px 0;
         }
         
         .ranking-region-btns {
@@ -2269,13 +2279,43 @@
         .ranking-card {
             display: flex;
             align-items: center;
-            padding: 12px 16px;
+            padding: 2px 10px;
+            min-height: 0;
             background: linear-gradient(145deg, #1a1a1a 0%, #171717 100%);
             border: 1px solid rgba(255,255,255,0.06);
             border-radius: 10px;
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            gap: 12px;
+            gap: 10px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* cover遮罩效果：悬停轻提亮，点击瞬间白色遮罩覆盖全卡（选中反馈） */
+        .ranking-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.12);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s ease;
+        }
+        
+        .ranking-card:hover::after {
+            opacity: 1;
+        }
+        
+        .ranking-card:active {
+            transform: scale(0.985);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.3) inset, 0 2px 6px rgba(0,0,0,0.15);
+        }
+        
+        .ranking-card:active::after {
+            background: rgba(255,255,255,0.28);
+            opacity: 1;
         }
         
         .ranking-card:hover {
@@ -2299,37 +2339,56 @@
             border-color: rgba(205, 127, 50, 0.3);
         }
         
-        .ranking-card-rank {
-            width: 42px;
-            height: 42px;
+        /* 官方段位图标（撑满卡片高度，裁剪透明边缘） */
+        .ranking-card-rankicon {
+            width: 90px;
+            flex-shrink: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 15px;
-            font-weight: 700;
-            color: #999999;
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 8px;
+            align-self: stretch;
+            margin: -2px 0;
+        }
+        
+        .ranking-card-rankicon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+        }
+        
+        /* 官方风格：裸数字名次（斜体大字，无底色块），浮在底图之上 */
+        .ranking-card-rank {
+            width: 38px;
+            text-align: center;
+            font-size: 19px;
+            font-style: italic;
+            font-weight: 800;
+            color: #aaaaaa;
             flex-shrink: 0;
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* 有底图时名次加投影保证可读 */
+        .ranking-card.has-emblem .ranking-card-rank {
+            text-shadow: 0 1px 3px rgba(0,0,0,0.9);
         }
         
         .rank-gold .ranking-card-rank {
             color: #ffd700;
-            background: rgba(255, 215, 0, 0.1);
-            border-color: rgba(255, 215, 0, 0.4);
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.45);
         }
         
         .rank-silver .ranking-card-rank {
-            color: #c0c0c0;
-            background: rgba(192, 192, 192, 0.1);
-            border-color: rgba(192, 192, 192, 0.4);
+            color: #e0e0e0;
+            text-shadow: 0 0 10px rgba(200, 200, 200, 0.4);
         }
         
         .rank-bronze .ranking-card-rank {
             color: #cd7f32;
-            background: rgba(205, 127, 50, 0.1);
-            border-color: rgba(205, 127, 50, 0.4);
+            text-shadow: 0 0 10px rgba(205, 127, 50, 0.4);
         }
         
         .ranking-card-info {
@@ -2343,7 +2402,7 @@
         .ranking-card-name-row {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 5px;
             min-width: 0;
         }
         
@@ -2359,7 +2418,7 @@
         
         .ranking-player-name {
             color: #ffffff;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             white-space: nowrap;
             overflow: hidden;
@@ -2373,17 +2432,19 @@
         
         .ranking-card-title {
             color: #b08d57;
-            font-size: 11px;
+            font-size: 10px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            max-width: 85%;
+            flex-shrink: 1;
         }
         
         .ranking-card-meta {
             display: flex;
             align-items: center;
-            gap: 8px;
-            font-size: 11px;
+            gap: 6px;
+            font-size: 10px;
             color: #888888;
         }
         
@@ -2397,17 +2458,89 @@
             font-size: 10px;
         }
         
+        /* 官方风格图片区：称号图上下充满（与卡片等高），信息叠在图片上方，角色在图片右缘凸出 */
+        .ranking-card-visual {
+            position: relative;
+            display: flex;
+            align-items: center;
+            flex: 1;
+            min-width: 0;
+            align-self: stretch;
+            margin: -2px 0;
+        }
+        
+        .ranking-card-emblem {
+            position: absolute;
+            /* 向左延伸：10左内边距+38名次+10间距 = 58px，底图顶到卡片最左缘；contain完整显示不裁剪 */
+            top: 0;
+            bottom: 0;
+            left: -58px;
+            width: calc(100% + 58px);
+            object-fit: contain;
+            object-position: left center;
+            filter: brightness(0.72);
+            z-index: 0;
+        }
+        
+        /* 有底图时上下抵消卡片2px内边距，图片与卡片上下边缘完全齐平；深色底让残留透明边不明显 */
+        .ranking-card-visual.has-emblem {
+            margin: -2px 0;
+            background: rgba(0,0,0,0.35);
+        }
+        
+        /* 信息叠在称号图上方 */
+        .ranking-card-visual .ranking-card-info {
+            position: relative;
+            z-index: 1;
+            margin-left: 10px;
+        }
+        
+        /* 底图之上文字固定亮色带阴影，保证可读 */
+        .ranking-card-visual.has-emblem .ranking-player-name { color: #ffffff; text-shadow: 0 1px 3px rgba(0,0,0,0.9); }
+        .ranking-card-visual.has-emblem .ranking-player-name:hover { color: #ffd400; }
+        .ranking-card-visual.has-emblem .ranking-card-title { color: #ffd400; text-shadow: 0 1px 3px rgba(0,0,0,0.9); }
+        .ranking-card-visual.has-emblem .ranking-card-meta { color: #dddddd; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+        .ranking-card-visual.has-emblem .ranking-card-region { color: #cccccc; }
+        .ranking-card-visual.has-emblem .ranking-player-id { color: #bbbbbb; }
+        .ranking-card-visual.has-emblem .ranking-card-platform {
+            background: rgba(0,0,0,0.45); border-color: rgba(255,255,255,0.2); color: #dddddd;
+        }
+        
+        .ranking-card-divider {
+            align-self: stretch;
+            width: 1px;
+            background: rgba(255,255,255,0.12);
+            margin: 5px 10px;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* 右侧竖线（图片和分数之间）右移，右侧区域整体拉长 */
+        .ranking-card-visual + .ranking-card-divider {
+            margin-left: 52px;
+        }
+        
         .ranking-card-char {
-            width: 56px;
-            height: 56px;
+            width: 64px;
             flex-shrink: 0;
             display: flex;
             align-items: center;
             justify-content: center;
             position: relative;
+            margin-right: 4px;
+            align-self: stretch;
+        }
+        
+        /* 排行榜图片区内：角色在底图右缘并大幅向外凸出，压过竖线伸向分数区 */
+        .ranking-card-visual .ranking-card-char {
+            margin-left: auto;
+            margin-right: -26px;
+            z-index: 1;
         }
         
         .ranking-card-char img {
+            display: block;
             width: 100%;
             height: 100%;
             object-fit: contain;
@@ -2433,13 +2566,16 @@
             align-items: flex-end;
             gap: 2px;
             flex-shrink: 0;
-            min-width: 60px;
+            min-width: 80px;
+            margin-right: 6px;
+            margin-left: 14px;
         }
         
         .ranking-card-mr {
-            color: #f39c12;
+            color: #ffffff;
             font-size: 17px;
             font-weight: 700;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.4);
         }
         
         .ranking-card-mr-label {
@@ -2456,7 +2592,9 @@
         }
         
         .ranking-page-btn {
-            padding: 6px 16px;
+            height: 30px;
+            box-sizing: border-box;
+            padding: 0 14px;
             font-size: 13px;
             background: rgba(255,255,255,0.04);
             color: #cccccc;
@@ -2482,19 +2620,170 @@
             font-size: 13px;
         }
         
-        /* ==================== 格斗圈样式 ==================== */
-        .fighters-container {
-            padding: 15px 20px;
+        /* 排行榜页码跳转输入框 */
+        .ranking-page-jump {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
         
-        .fighters-container h2 {
+        .ranking-page-input {
+            width: 64px;
+            height: 30px;
+            box-sizing: border-box;
+            padding: 0 8px;
+            font-size: 13px;
+            background: rgba(255,255,255,0.04);
+            color: #cccccc;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 6px;
+            outline: none;
+            text-align: center;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .ranking-page-input:focus {
+            border-color: rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.06);
+        }
+        
+        /* 排行榜二级导航（复用sub-nav样式，靠左排列） */
+        .ranking-sub-nav {
+            justify-content: flex-start;
+        }
+        
+        /* 二级导航内筛选区（小号控件，靠右） */
+        .ranking-sub-nav-filters {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding-right: 4px;
+        }
+        
+        .ranking-sub-nav-filters .ranking-region-btn {
+            padding: 4px 12px;
+            font-size: 12px;
+        }
+        
+        .ranking-refresh-btn {
+            height: 28px;
+            padding: 0 12px;
+            font-size: 12px;
+            background: rgba(255,255,255,0.04);
+            color: #cccccc;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            white-space: nowrap;
+        }
+        
+        .ranking-refresh-btn:hover {
+            background: rgba(255,255,255,0.1);
             color: #ffffff;
-            font-size: 1.2em;
-            margin-bottom: 12px;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-            padding-bottom: 10px;
+            border-color: rgba(255,255,255,0.2);
         }
         
+        /* ==================== 排行榜数据统计样式 ==================== */
+        .ranking-stats-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .ranking-stats-note {
+            font-size: 11px;
+            color: #888888;
+            padding: 0 2px;
+        }
+        
+        .rstat-card {
+            background: linear-gradient(145deg, #1a1a1a 0%, #171717 100%);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 10px;
+            padding: 14px 16px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+        
+        .rstat-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        /* 统计卡片收起/展开 */
+        .rstat-toggle {
+            margin-left: auto;
+            font-size: 10px;
+            color: #666666;
+            transition: transform 0.2s;
+        }
+        
+        .rstat-card.collapsed .rstat-toggle {
+            transform: rotate(-90deg);
+        }
+        
+        .rstat-card.collapsed .rstat-body {
+            display: none;
+        }
+        
+        .rstat-card.collapsed .rstat-title {
+            margin-bottom: 0;
+        }
+        
+        .rstat-sub {
+            font-size: 11px;
+            color: #888888;
+            font-weight: 400;
+        }
+        
+        .rstat-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 7px 0;
+            font-size: 11px;
+        }
+        
+        .rstat-name {
+            width: 92px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #cccccc;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .rstat-name img {
+            width: 20px;
+            height: 20px;
+            object-fit: contain;
+            flex-shrink: 0;
+        }
+        
+        .rstat-val {
+            width: 110px;
+            text-align: right;
+            color: #999999;
+            flex-shrink: 0;
+        }
+        
+        .rstat-avg {
+            color: #f39c12;
+            font-weight: 600;
+        }
+        
+        /* ==================== 格斗圈样式 ==================== */
         .fighters-online-status {
             font-size: 10px;
             color: #27ae60;
@@ -2516,11 +2805,6 @@
             color: #999999;
             background: rgba(0, 0, 0, 0.04);
             border-color: rgba(0, 0, 0, 0.1);
-        }
-        
-        /* 格斗圈排序导航（仿官网 sort_nav 标签式） */
-        .fighters-sort-nav .ranking-region-btn {
-            padding: 7px 14px;
         }
         
         .fighters-sort-nav .ranking-region-btn:not(:last-child) {
@@ -2736,8 +3020,6 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
         body.light-theme .section h2 { color: #333; border-bottom-color: #dee2e6; }
-        /* Fixed nav & scroll areas：固定区保持透明，不产生直角底色块 */
-        body.light-theme .fixed-nav-section { background: transparent; }
         /* Sub nav */
         body.light-theme .sub-nav {
             /* 导航带用中性浅灰，不带蓝调 */
@@ -3036,9 +3318,12 @@
             color: white; border-color: #444444;
             box-shadow: 0 2px 6px rgba(39, 174, 96, 0.4);
         }
-        /* Query page */
-        body.light-theme .query-container h2 {
+        /* Nav panel h2 (unified) */
+        body.light-theme .nav-panel > h2 {
             color: #333; border-bottom-color: #dee2e6;
+        }
+        body.light-theme .nav-panel.collapsed > h2 {
+            border-bottom-color: transparent;
         }
         body.light-theme .search-bar input {
             background: #ffffff; color: #333; border-color: #dee2e6;
@@ -3107,12 +3392,6 @@
             background: #f0f2f5; border-color: #dee2e6;
         }
         /* Ranking page */
-        body.light-theme .ranking-container h2 {
-            color: #333; border-bottom-color: #dee2e6;
-        }
-        body.light-theme .ranking-select {
-            background: #ffffff; color: #333; border-color: #dee2e6;
-        }
         body.light-theme .ranking-region-btns {
             border-color: #dee2e6;
         }
@@ -3140,12 +3419,21 @@
         body.light-theme .ranking-card.rank-bronze {
             background: rgba(205, 127, 50, 0.08); border-color: rgba(205, 127, 50, 0.4);
         }
-        body.light-theme .ranking-card-rank {
-            background: #f0f2f5; border-color: #dee2e6; color: #555;
+        body.light-theme .ranking-card-divider {
+            background: #dee2e6;
         }
-        body.light-theme .rank-gold .ranking-card-rank { color: #b8860b; background: rgba(255,215,0,0.12); border-color: rgba(200,170,0,0.4); }
-        body.light-theme .rank-silver .ranking-card-rank { color: #808080; background: rgba(192,192,192,0.12); border-color: rgba(150,150,150,0.4); }
-        body.light-theme .rank-bronze .ranking-card-rank { color: #a0522d; background: rgba(205,127,50,0.12); border-color: rgba(205,127,50,0.4); }
+        /* 亮色主题下底图之上文字仍保持亮色 */
+        body.light-theme .ranking-card-visual.has-emblem .ranking-player-name { color: #ffffff; }
+        body.light-theme .ranking-card-visual.has-emblem .ranking-player-name:hover { color: #ffd400; }
+        body.light-theme .ranking-card-visual.has-emblem .ranking-card-title { color: #ffd400; }
+        body.light-theme .ranking-card-visual.has-emblem .ranking-card-meta { color: #dddddd; }
+        /* 裸数字名次：无底块，仅调文字色 */
+        body.light-theme .ranking-card-rank {
+            background: transparent; border: none; color: #888;
+        }
+        body.light-theme .rank-gold .ranking-card-rank { color: #b8860b; background: transparent; border: none; }
+        body.light-theme .rank-silver .ranking-card-rank { color: #808080; background: transparent; border: none; }
+        body.light-theme .rank-bronze .ranking-card-rank { color: #a0522d; background: transparent; border: none; }
         body.light-theme .ranking-player-name { color: #333; }
         body.light-theme .ranking-player-name:hover { color: #2979ff; }
         body.light-theme .ranking-card-platform {
@@ -3167,10 +3455,28 @@
             background: #e9ecef; border-color: #adb5bd;
         }
         body.light-theme .ranking-page-info { color: #666; }
-        /* Fighters page */
-        body.light-theme .fighters-container h2 {
-            color: #333; border-bottom-color: #dee2e6;
+        body.light-theme .ranking-page-input {
+            background: #f0f2f5; border-color: #dee2e6; color: #333;
         }
+        body.light-theme .ranking-page-input:focus {
+            background: #ffffff; border-color: #adb5bd;
+        }
+        body.light-theme .ranking-refresh-btn {
+            background: #f0f2f5; border-color: #dee2e6; color: #333;
+        }
+        body.light-theme .ranking-refresh-btn:hover {
+            background: #e9ecef; border-color: #adb5bd; color: #111;
+        }
+        body.light-theme .ranking-stats-note { color: #888; }
+        body.light-theme .rstat-card {
+            background: #ffffff; border-color: #e0e0e0;
+        }
+        body.light-theme .rstat-title { color: #333; }
+        body.light-theme .rstat-sub { color: #999; }
+        body.light-theme .rstat-name { color: #555; }
+        body.light-theme .rstat-val { color: #777; }
+        body.light-theme .rstat-avg { color: #d68910; }
+        /* Fighters page */
         body.light-theme .fighters-online-status {
             color: #1e8e4e; background: rgba(39,174,96,0.08); border-color: rgba(39,174,96,0.3);
         }
@@ -3235,6 +3541,7 @@
             gap: 0;
             border-bottom: 1px solid rgba(255,255,255,0.06);
             margin-bottom: 10px;
+            padding: 0 12px;
         }
         .fav-filter-tab {
             padding: 8px 16px;
@@ -3498,7 +3805,10 @@
             height: 280px;
         }
         body.spacious-mode .sub-nav {
-            margin-bottom: 14px;
+            margin: 10px 0;
+        }
+        body.spacious-mode .nav-panel .sub-nav {
+            padding: 6px 16px;
         }
         body.spacious-mode .sub-nav-item {
             padding: 6px 16px;
@@ -3553,25 +3863,41 @@
             padding: 4px 6px;
             font-size: 12px;
         }
-        /* 宽松模式 - 查询页面 */
-        body.spacious-mode .query-container {
-            padding: 24px;
+        /* 宽松模式 - 统一导航面板 */
+        body.spacious-mode .nav-panel {
+            padding: 0;
+        }
+        body.spacious-mode .nav-panel > h2 {
+            padding: 0 16px 10px 16px;
+        }
+        body.spacious-mode .ranking-filters {
+            padding-left: 0;
+            padding-right: 16px;
+            margin-bottom: 12px;
+        }
+        body.spacious-mode .fav-filter-bar,
+        body.spacious-mode .search-bar {
+            padding-left: 16px;
+            padding-right: 16px;
+        }
+        body.spacious-mode .favorites-section,
+        body.spacious-mode .history-section {
+            margin: 0 16px 28px 16px;
         }
         body.spacious-mode .search-bar {
-            margin-bottom: 30px;
+            margin-bottom: 22px;
         }
         body.spacious-mode .search-bar input {
-            padding: 12px 18px;
-            font-size: 15px;
+            padding: 10px 16px;
+            font-size: 14px;
         }
         body.spacious-mode .search-btn {
-            padding: 12px 34px;
-            font-size: 15px;
+            padding: 10px 28px;
+            font-size: 14px;
         }
         body.spacious-mode .favorites-section,
         body.spacious-mode .history-section {
             padding: 18px;
-            margin-bottom: 28px;
             border-radius: 6px;
         }
         body.spacious-mode .favorite-item,
@@ -3726,15 +4052,22 @@
             border-color: rgba(0, 195, 255, 0.22) !important;
         }
         body.sf6-theme .section h2,
+        body.sf6-theme .nav-panel > h2,
         body.sf6-theme .profile-title {
             color: #ffffff !important;
             letter-spacing: 1.5px !important;
             font-style: italic !important;
         }
         /* 标题分隔线：蓝金渐变，呼应旗袍金饰边 */
-        body.sf6-theme .section h2 {
+        body.sf6-theme .section h2,
+        body.sf6-theme .nav-panel > h2 {
             border-bottom: 1px solid transparent !important;
             border-image: linear-gradient(90deg, rgba(0,195,255,0.5), rgba(255,212,0,0.45), transparent) 1 !important;
+        }
+        /* 收缩时底边线隐藏 */
+        body.sf6-theme .nav-panel.collapsed > h2 {
+            border-bottom-color: transparent !important;
+            border-image: none !important;
         }
         body.sf6-theme .profile-header { border-bottom-color: rgba(255, 212, 0, 0.25) !important; }
         /* 春丽主题下页面底色偏蓝，玩家信息卡需要更明显的描边+阴影才能从底色中浮出 */
@@ -3885,18 +4218,21 @@
             border-color: rgba(0, 195, 255, 0.12) !important;
         }
 
-        /* 容器/面板/卡片：固定区保持透明，卡片层级由玩家信息卡自身承担 */
-        body.sf6-theme .fixed-nav-section { background: transparent !important; }
         body.sf6-theme .chart-section,
         body.sf6-theme .rival-winrate-panel,
         body.sf6-theme .history-section,
+        body.sf6-theme .rstat-card,
         body.sf6-theme .favorites-section { background: linear-gradient(150deg, #12214a 0%, #0d1730 100%) !important; }
+        body.sf6-theme .rstat-card { border-color: rgba(0,195,255,0.18) !important; }
         body.sf6-theme .ranking-card { background: linear-gradient(150deg, #13234e 0%, #0d1730 100%) !important; border-color: rgba(0,195,255,0.18) !important; }
         body.sf6-theme .ranking-card:hover {
             background: linear-gradient(150deg, #17306a 0%, #10204a 100%) !important;
             border-color: rgba(0, 195, 255, 0.45) !important;
             box-shadow: 0 4px 14px rgba(0, 120, 255, 0.25) !important;
         }
+        body.sf6-theme .ranking-card-divider { background: rgba(0,195,255,0.25) !important; }
+        /* 裸数字名次：春丽主题下用冰蓝色 */
+        body.sf6-theme .ranking-card-rank { color: #9db1d6 !important; }
 
         /* 所有灰白半透明小底块 → 电蓝淡底（角色格、小徽章、小按钮等） */
         body.sf6-theme .match-character,
@@ -3916,10 +4252,10 @@
         body.sf6-theme .btn-save-remark,
         body.sf6-theme .btn-favorite-query,
         body.sf6-theme .btn-query-from-history,
-        body.sf6-theme .ranking-card-rank,
         body.sf6-theme .ranking-card-platform,
         body.sf6-theme .ranking-card-char .char-fallback,
         body.sf6-theme .ranking-page-btn,
+        body.sf6-theme .ranking-page-input,
         body.sf6-theme .rival-char-checkbox,
         body.sf6-theme .fighters-online-status.offline,
         body.sf6-theme .fav-status-btn,
@@ -3975,9 +4311,17 @@
         body.sf6-theme .favorite-id,
         body.sf6-theme .player-id,
         body.sf6-theme .settings-item-desc,
+        body.sf6-theme .ranking-stats-note,
+        body.sf6-theme .rstat-sub,
+        body.sf6-theme .rstat-name,
+        body.sf6-theme .rstat-val,
         body.sf6-theme .ranking-card-platform {
             color: #8fa4c9 !important;
         }
+
+        /* 排行榜统计卡片文字 */
+        body.sf6-theme .rstat-title { color: #dbe7ff !important; }
+        body.sf6-theme .rstat-avg { color: #ffd400 !important; }
 
         /* ==================== 对战报告 ==================== */
         .report-container { padding: 12px; }
@@ -4420,6 +4764,20 @@
         let favoritePlayers = [];  // 收藏的玩家列表
         let favoriteBattles = [];  // 收藏的对局列表
         let favBattleFilter = 'all';  // 收藏对局筛选: all/pending/watched
+        
+        // 导航面板收缩状态（各面板独立收缩，持久化到 localStorage）
+        let navPanelStates = { ranking: false, fighters: false, query: false, favorites: false };
+        try {
+            const saved = localStorage.getItem('sf6_nav_panel_states');
+            if (saved) Object.assign(navPanelStates, JSON.parse(saved));
+        } catch(e) {}
+        
+        function toggleNavPanel(panelId) {
+            navPanelStates[panelId] = !navPanelStates[panelId];
+            try { localStorage.setItem('sf6_nav_panel_states', JSON.stringify(navPanelStates)); } catch(e) {}
+            const panel = document.querySelector(`.nav-panel[data-panel-id="${panelId}"]`);
+            if (panel) panel.classList.toggle('collapsed');
+        }
         
         // 路由处理 - 根据URL路径和参数显示不同页面
         function handleRoute(shouldRefreshHome = false) {
@@ -4974,7 +5332,14 @@
             data: null,
             rankingList: null,
             pagination: null,  // {current_page, total_page, total_count}
-            loading: false
+            loading: false,
+            view: 'list',  // 二级导航: list=排行榜, stats=数据统计
+            stats: null,  // 统计接口返回数据
+            statsLoading: false,
+            statsError: '',
+            statsCollapsed: {},  // 统计卡片收起状态 {usage/mr/avg: bool}
+            statsHomeFilter: 1,  // 数据统计独立地区筛选: 1=全球, 3=中国
+            cachedStats: {}  // 按地区缓存统计结果 {1: {...}, 3: {...}}
         };
                 
         // 角色工具名映射
@@ -4986,6 +5351,21 @@
             21: 'jamie', 22: 'gouki', 25: 'sagat', 26: 'vega', 27: 'terry',
             28: 'mai', 29: 'elena', 30: 'cviper', 31: 'alex', 32: 'ingrid'
         };
+        
+        // 官方段位图标：优先使用玩家实际段位master_league（榜单内为传奇=37）；
+        // 无字段时才按MR推断：≥1600=rank40，≥1700=rank41，≥1800=rank42
+        function getRankingRankIconUrl(mr, league) {
+            let n;
+            if (league && league >= 37) {
+                n = league;
+            } else {
+                n = 37;
+                if (mr >= 1800) n = 42;
+                else if (mr >= 1700) n = 41;
+                else if (mr >= 1600) n = 40;
+            }
+            return `https://www.streetfighter.com/6/buckler/assets/images/material/rank/rank${n}_l.png`;
+        }
                 
         function showRankingPage() {
             // 更新侧边栏激活状态
@@ -5006,8 +5386,23 @@
             if (!rankingState.data && !rankingState.loading) {
                 fetchRankingData();
             }
+            // 统计视图且无缓存时自动加载统计数据
+            if (rankingState.view === 'stats' && !rankingState.stats && !rankingState.statsLoading) {
+                fetchRankingStats();
+            }
         }
                 
+        // 复用模板：加载中状态
+        function loadingHtml(text) {
+            return `<div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding-bottom:12%">
+                <div class="spinner" style="margin-bottom:0"></div>
+                <div class="empty-state-text" style="color:#999">${text}</div></div>`;
+        }
+        // 复用模板：空状态
+        function emptyStateHtml(icon, text) {
+            return `<div class="empty-state"><div class="empty-state-icon">${icon}</div><div class="empty-state-text">${text}</div></div>`;
+        }
+
         function renderRankingPage() {
             const fixedNavSection = document.getElementById('fixedNavSection');
             const battlesScrollArea = document.getElementById('battlesScrollArea');
@@ -5017,36 +5412,52 @@
                 ? (CHARACTER_ROSTER.find(c => c.tool === rankingState.characterId)?.name || '')
                 : '';
             fixedNavSection.innerHTML = `
-                <div class="ranking-container">
-                    <h2>🏆 Master排行榜</h2>
-                    <div class="ranking-filters">
-                        ${renderCharPickerTrigger({ onclick: 'openRankingCharacterPicker()', label: '所有角色', value: rankingCharName, imgMap: {} })}
-                        <div class="ranking-region-btns">
-                            <button class="ranking-region-btn ${rankingState.homeFilter === 1 ? 'active' : ''}" onclick="changeRankingRegion(1)">全球</button>
-                            <button class="ranking-region-btn ${rankingState.homeFilter === 3 ? 'active' : ''}" onclick="changeRankingRegion(3)">中国</button>
+                <div class="nav-panel${navPanelStates.ranking ? ' collapsed' : ''}" data-panel-id="ranking">
+                    <h2 onclick="toggleNavPanel('ranking')">🏆 Master排行榜</h2>
+                    <div class="nav-panel-body">
+                        <div id="rankingStatus"></div>
+                        <div class="sub-nav ranking-sub-nav">
+                            <div class="sub-nav-item ${rankingState.view === 'list' ? 'active' : ''}" onclick="switchRankingView('list')">排行榜</div>
+                            <div class="sub-nav-item ${rankingState.view === 'stats' ? 'active' : ''}" onclick="switchRankingView('stats')">数据统计</div>
+                            <div class="ranking-sub-nav-filters">
+                                <button class="ranking-refresh-btn" onclick="refreshRankingView()" title="刷新当前视图数据">刷新</button>
+                            </div>
                         </div>
+                        ${rankingState.view === 'list' ? `
+                        <div class="ranking-filters">
+                            ${renderCharPickerTrigger({ onclick: 'openRankingCharacterPicker()', label: '所有角色', value: rankingCharName, imgMap: {} })}
+                            <div class="ranking-region-btns">
+                                <button class="ranking-region-btn ${rankingState.homeFilter === 1 ? 'active' : ''}" onclick="changeRankingRegion(1)">全球</button>
+                                <button class="ranking-region-btn ${rankingState.homeFilter === 3 ? 'active' : ''}" onclick="changeRankingRegion(3)">中国</button>
+                            </div>
+                        </div>` : `
+                        <div class="ranking-filters">
+                            <div class="ranking-region-btns">
+                                <button class="ranking-region-btn ${rankingState.statsHomeFilter === 1 ? 'active' : ''}" onclick="changeStatsRegion(1)">全球</button>
+                                <button class="ranking-region-btn ${rankingState.statsHomeFilter === 3 ? 'active' : ''}" onclick="changeStatsRegion(3)">中国</button>
+                            </div>
+                        </div>`}
                     </div>
-                    <div id="rankingStatus"></div>
                 </div>
             `;
                     
             // 渲染排行榜数据区域
-            if (rankingState.loading) {
-                battlesScrollArea.innerHTML = `
-                    <div style="height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding-bottom: 12%;">
-                        <div class="spinner" style="margin-bottom: 0;"></div>
-                        <div class="empty-state-text" style="color: #999999;">正在加载排行榜...</div>
-                    </div>
-                `;
+            if (rankingState.view === 'stats') {
+                if (rankingState.statsLoading) {
+                    battlesScrollArea.innerHTML = `<div class="ranking-content">${loadingHtml('正在统计传奇段位前500名数据...')}</div>`;
+                } else if (rankingState.statsError) {
+                    battlesScrollArea.innerHTML = `<div class="ranking-content">${emptyStateHtml('❌', rankingState.statsError)}</div>`;
+                } else if (rankingState.stats) {
+                    renderRankingStats(battlesScrollArea);
+                } else {
+                    battlesScrollArea.innerHTML = `<div class="ranking-content">${emptyStateHtml('📊', '暂无统计数据')}</div>`;
+                }
+            } else if (rankingState.loading) {
+                battlesScrollArea.innerHTML = loadingHtml('正在加载排行榜...');
             } else if (rankingState.data) {
                 renderRankingTable(battlesScrollArea);
             } else {
-                battlesScrollArea.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">🏆</div>
-                        <div class="empty-state-text">选择角色查看排行榜</div>
-                    </div>
-                `;
+                battlesScrollArea.innerHTML = emptyStateHtml('🏆', '选择角色查看排行榜');
             }
         }
                 
@@ -5065,12 +5476,7 @@
             
             
             if (!rankingList || rankingList.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📊</div>
-                        <div class="empty-state-text">暂无排行榜数据</div>
-                    </div>
-                `;
+                container.innerHTML = emptyStateHtml('📊', '暂无排行榜数据');
                 return;
             }
             
@@ -5101,7 +5507,9 @@
                 const lp = player.league_point || 0;
                 const charName = player.character_name || (player.character_id ? getCharacterNameById(player.character_id) : '');
                 const charTool = player.character_tool_name || '';
-                const titleVal = (player.ranking_title_data && player.ranking_title_data.title_data_val) || '';
+                const titleData = player.ranking_title_data || {};
+                const titleVal = titleData.title_data_val || '';
+                const titlePlate = titleData.title_data_plate_name || '';
                 const region = banner.home_name || '';
                 
                 // 角色图片URL
@@ -5109,6 +5517,17 @@
                 const charImgHtml = charImgUrl
                     ? `<img src="${charImgUrl}" alt="${charName}" onerror="this.parentElement.innerHTML='<div class=\\'char-fallback\\'>${charName}</div>'">`
                     : `<div class="char-fallback">${charName || '?'}</div>`;
+                
+                // 官方称号图（图片区底图：上下充满卡片，信息叠在图片上方）
+                const emblemImgHtml = titlePlate
+                    ? `<img class="ranking-card-emblem" src="https://www.streetfighter.com/6/buckler/assets/images/material/title/${titlePlate}.png" alt="" onerror="this.style.display='none'">`
+                    : '';
+                // 官方段位图标（优先实际段位master_league，legend优先）
+                const rankIconUrl = getRankingRankIconUrl(mr, player.master_league);
+                // 卡片整体可点击：查询该玩家
+                const cardClickAttrs = shortId
+                    ? ` onclick="queryPlayerById('${shortId}', event)"`
+                    : '';
                         
                 // 排名样式
                 let rankClass = '';
@@ -5117,25 +5536,30 @@
                 else if (rank == 3) rankClass = 'rank-bronze';
                         
                 return `
-                    <div class="ranking-card ${rankClass}">
+                    <div class="ranking-card ${rankClass}${titlePlate ? ' has-emblem' : ''}"${cardClickAttrs}>
                         <div class="ranking-card-rank">${rank}</div>
-                        <div class="ranking-card-info">
-                            <div class="ranking-card-name-row">
-                                ${platform ? `<span class="ranking-card-platform">${platform}</span>` : ''}
-                                <span class="ranking-player-name" ${shortId ? `onclick="queryPlayerById('${shortId}', event)" title="点击查询该玩家"` : ''}>${name}</span>
+                        <div class="ranking-card-visual${titlePlate ? ' has-emblem' : ''}">
+                            ${emblemImgHtml}
+                            <div class="ranking-card-info">
+                                <div class="ranking-card-name-row">
+                                    ${platform ? `<span class="ranking-card-platform">${platform}</span>` : ''}
+                                    <span class="ranking-player-name">${name}</span>
+                                </div>
+                                ${titleVal ? `<div class="ranking-card-meta"><span class="ranking-card-title">${titleVal}</span></div>` : ''}
+                                <div class="ranking-card-meta">
+                                    ${region ? `<span class="ranking-card-region">🌐 ${region}</span>` : ''}
+                                    <span>${charName}</span>
+                                    ${shortId ? `<span class="ranking-player-id" oncontextmenu="return copyToClipboard('${shortId}', event)" title="右键复制ID">${shortId}</span>` : ''}
+                                </div>
                             </div>
-                            ${titleVal ? `<div class="ranking-card-title">${titleVal}</div>` : ''}
-                            <div class="ranking-card-meta">
-                                ${region ? `<span class="ranking-card-region">🌐 ${region}</span>` : ''}
-                                <span>${charName}</span>
-                                ${shortId ? `<span class="ranking-player-id" oncontextmenu="return copyToClipboard('${shortId}', event)" title="右键复制ID">${shortId}</span>` : ''}
-                            </div>
+                            <div class="ranking-card-char">${charImgHtml}</div>
                         </div>
-                        <div class="ranking-card-char">${charImgHtml}</div>
+                        <div class="ranking-card-divider"></div>
                         <div class="ranking-card-score">
                             <span class="ranking-card-mr">${mr > 0 ? mr : lp}</span>
                             <span class="ranking-card-mr-label">${mr > 0 ? 'MR' : 'LP'}</span>
                         </div>
+                        <div class="ranking-card-rankicon"><img src="${rankIconUrl}" alt="段位" onerror="this.style.display='none'"></div>
                     </div>
                 `;
             }).join('');
@@ -5148,14 +5572,23 @@
                     <button class="ranking-page-btn" onclick="changeRankingPage(${rankingState.page - 1})" ${!hasPrev ? 'disabled' : ''}>上一页</button>
                     <span class="ranking-page-info">第 ${rankingState.page} 页${totalPage > 0 ? ' / 共' + totalPage + '页' : ''}（共${totalCount}人）</span>
                     <button class="ranking-page-btn" onclick="changeRankingPage(${rankingState.page + 1})" ${!hasNext ? 'disabled' : ''}>下一页</button>
+                    ${totalPage > 0 ? `
+                        <span class="ranking-page-jump">
+                            <input type="number" id="rankingPageInput" class="ranking-page-input" min="1" max="${totalPage}" value="${rankingState.page}"
+                                   onkeydown="if (event.key === 'Enter') gotoRankingPage()" title="输入页码后回车或点跳转">
+                            <button class="ranking-page-btn" onclick="gotoRankingPage()">跳转</button>
+                        </span>
+                    ` : ''}
                 </div>
             `;
                     
             container.innerHTML = `
-                <div class="ranking-list">
-                    ${rows}
+                <div class="ranking-content">
+                    <div class="ranking-list">
+                        ${rows}
+                    </div>
+                    ${paginationHtml}
                 </div>
-                ${paginationHtml}
             `;
         }
                 
@@ -5191,6 +5624,169 @@
             rankingState.page = page;
             fetchRankingData();
         }
+        
+        // 输入页码跳转（自动限制在有效范围内）
+        function gotoRankingPage() {
+            const input = document.getElementById('rankingPageInput');
+            if (!input) return;
+            const totalPage = (rankingState.pagination && rankingState.pagination.total_page) || 0;
+            let page = parseInt(input.value, 10);
+            if (isNaN(page) || page < 1) page = 1;
+            if (totalPage > 0 && page > totalPage) page = totalPage;
+            input.value = page;
+            if (page === rankingState.page) return;
+            changeRankingPage(page);
+        }
+        
+        // 排行榜二级导航切换（选中态点击不重复处理，即时切换）
+        function switchRankingView(view) {
+            if (rankingState.view === view) return;
+            rankingState.view = view;
+            renderRankingPage();
+            if (view === 'stats' && !rankingState.stats && !rankingState.statsLoading) {
+                fetchRankingStats();
+            }
+        }
+        
+        // 二级导航刷新按钮：刷新当前视图数据（统计视图强制绕过服务端缓存）
+        function refreshRankingView() {
+            if (rankingState.view === 'stats') {
+                if (rankingState.statsLoading) return;
+                rankingState.stats = null;
+                fetchRankingStats(true);
+            } else {
+                if (rankingState.loading) return;
+                fetchRankingData();
+            }
+        }
+        
+        // 统计卡片收起/展开（不重建DOM，直接切换类）
+        function toggleRstatCard(key) {
+            if (!rankingState.statsCollapsed) rankingState.statsCollapsed = {};
+            rankingState.statsCollapsed[key] = !rankingState.statsCollapsed[key];
+            const card = document.getElementById('rstat-' + key);
+            if (card) card.classList.toggle('collapsed', !!rankingState.statsCollapsed[key]);
+        }
+        
+        // 数据统计地区筛选栏已移至nav-panel内，不再单独渲染
+        
+        // 切换统计地区：优先用本地缓存，无缓存时重新拉取
+        function changeStatsRegion(filter) {
+            if (rankingState.statsHomeFilter === filter || rankingState.statsLoading) return;
+            rankingState.statsHomeFilter = filter;
+            const cached = rankingState.cachedStats && rankingState.cachedStats[filter];
+            if (cached) {
+                rankingState.stats = cached;
+                rankingState.statsError = '';
+                renderRankingPage();
+            } else {
+                rankingState.stats = null;
+                fetchRankingStats();
+            }
+        }
+        
+        // 拉取排行榜数据统计（传奇段位前500，force=true时绕过服务端缓存）
+        async function fetchRankingStats(force) {
+            if (!cookie) {
+                rankingState.statsError = '❌ 请先登录后查看数据统计';
+                rankingState.statsLoading = false;
+                if (rankingState.view === 'stats') renderRankingPage();
+                return;
+            }
+            
+            rankingState.statsLoading = true;
+            rankingState.statsError = '';
+            renderRankingPage();
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/ranking-stats`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ top_n: 500, home_filter: rankingState.statsHomeFilter, force: !!force, cookie: cookie })
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok || !result.success) {
+                    rankingState.statsError = result.detail || '加载失败，请重试';
+                    return;
+                }
+                
+                rankingState.stats = result;
+                if (!rankingState.cachedStats) rankingState.cachedStats = {};
+                rankingState.cachedStats[rankingState.statsHomeFilter] = result;
+            } catch (error) {
+                console.error('排行榜统计请求异常:', error);
+                rankingState.statsError = '请求失败: ' + error.message;
+            } finally {
+                rankingState.statsLoading = false;
+                if (rankingState.view === 'stats') renderRankingPage();
+            }
+        }
+        
+        // 渲染数据统计面板（角色使用 / MR分段 / 平均排名）
+        function renderRankingStats(container) {
+            const s = rankingState.stats;
+            if (!s) return;
+            
+            const charImg = (tool) => tool
+                ? `<img src="https://www.streetfighter.com/6/buckler/assets/images/material/character/character_${tool}_l.png" onerror="this.style.display='none'">`
+                : '';
+            
+            // 1. 角色使用情况（数量/占比）
+            const maxUsage = Math.max(...s.character_usage.map(c => c.count), 1);
+            const usageRows = s.character_usage.map(c => `
+                <div class="rstat-row">
+                    <span class="rstat-name" title="${c.name}">${charImg(c.tool)}${c.name}</span>
+                    <div class="report-bar-track"><div class="report-bar-fill" style="width:${(c.count / maxUsage * 100).toFixed(1)}%"></div></div>
+                    <span class="rstat-val">${c.count}人 · ${c.percent}%</span>
+                </div>
+            `).join('');
+            
+            // 2. MR分段占比
+            const maxMr = Math.max(...s.mr_distribution.map(b => b.count), 1);
+            const mrRows = s.mr_distribution.map(b => `
+                <div class="rstat-row">
+                    <span class="rstat-name">${b.label}</span>
+                    <div class="report-bar-track"><div class="report-bar-fill" style="width:${(b.count / maxMr * 100).toFixed(1)}%"></div></div>
+                    <span class="rstat-val">${b.count}人 · ${b.percent}%</span>
+                </div>
+            `).join('');
+            
+            // 3. 角色平均排名（按平均排名升序）
+            const maxAvgCount = Math.max(...s.char_avg_rank.map(c => c.count), 1);
+            const avgRows = s.char_avg_rank.map(c => `
+                <div class="rstat-row">
+                    <span class="rstat-name" title="${c.name}">${charImg(c.tool)}${c.name}</span>
+                    <div class="report-bar-track"><div class="report-bar-fill" style="width:${(c.count / maxAvgCount * 100).toFixed(1)}%"></div></div>
+                    <span class="rstat-val"><span class="rstat-avg">平均${c.avg_rank}名</span> · ${c.count}人</span>
+                </div>
+            `).join('');
+            
+            const updatedAt = s.updated_at ? new Date(s.updated_at * 1000).toLocaleString() : '';
+            const collapsed = rankingState.statsCollapsed || {};
+            const regionName = s.home_filter === 3 ? '中国' : '全球';
+            
+            const cardHtml = (key, icon, title, sub, rowsHtml) => `
+                <div class="rstat-card${collapsed[key] ? ' collapsed' : ''}" id="rstat-${key}">
+                    <div class="rstat-title" onclick="toggleRstatCard('${key}')" title="点击收起/展开">
+                        ${icon} ${title} <span class="rstat-sub">${sub}</span><span class="rstat-toggle">▼</span>
+                    </div>
+                    <div class="rstat-body">${rowsHtml || '<div class="empty-state-text">暂无数据</div>'}</div>
+                </div>
+            `;
+            
+            container.innerHTML = `
+                <div class="ranking-content">
+                    <div class="ranking-stats-wrap">
+                        <div class="ranking-stats-note">统计范围：${regionName} · Master榜前${s.top_n}名（传奇段位）${updatedAt ? ' · 更新于 ' + updatedAt : ''}${s.from_cache ? '（缓存）' : ''}</div>
+                        ${cardHtml('usage', '👥', '角色使用情况', `前${s.top_n}名玩家的角色数量与占比`, usageRows)}
+                        ${cardHtml('mr', '📈', 'MR分段占比', `前${s.top_n}名玩家Master分数分布`, mrRows)}
+                        ${cardHtml('avg', '🎯', '角色平均排名', `前${s.top_n}名内各角色玩家的平均名次（越靠前越强）`, avgRows)}
+                    </div>
+                </div>
+            `;
+        }
                 
         async function fetchRankingData() {
             if (!cookie) {
@@ -5205,12 +5801,7 @@
                     
             rankingState.loading = true;
             const battlesScrollArea = document.getElementById('battlesScrollArea');
-            battlesScrollArea.innerHTML = `
-                <div style="height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding-bottom: 12%;">
-                    <div class="spinner" style="margin-bottom: 0;"></div>
-                    <div class="empty-state-text" style="color: #999999;">正在加载排行榜...</div>
-                </div>
-            `;
+            battlesScrollArea.innerHTML = loadingHtml('正在加载排行榜...');
                     
             try {
                 // 根据地区设置参数
@@ -5246,12 +5837,7 @@
                     rankingState.loading = false;
                     rankingState.data = null;
                     rankingState.rankingList = null;
-                    battlesScrollArea.innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-state-icon">❌</div>
-                            <div class="empty-state-text">${result.detail || '加载失败，请重试'}</div>
-                        </div>
-                    `;
+                    battlesScrollArea.innerHTML = emptyStateHtml('❌', result.detail || '加载失败，请重试');
                     return;
                 }
                         
@@ -5263,24 +5849,14 @@
                     renderRankingTable(battlesScrollArea);
                 } else {
                     rankingState.loading = false;
-                    battlesScrollArea.innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-state-icon">❌</div>
-                            <div class="empty-state-text">加载失败，请重试</div>
-                        </div>
-                    `;
+                    battlesScrollArea.innerHTML = emptyStateHtml('❌', '加载失败，请重试');
                 }
             } catch (error) {
                 // 被新请求取消时静默退出，不触碰任何状态
                 if (error.name === 'AbortError' || myId !== rankingFetchId) return;
                 console.error('排行榜请求异常:', error);
                 rankingState.loading = false;
-                battlesScrollArea.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">❌</div>
-                        <div class="empty-state-text">请求失败: ${error.message}</div>
-                    </div>
-                `;
+                battlesScrollArea.innerHTML = emptyStateHtml('❌', '请求失败: ' + error.message);
             }
         }
         
@@ -5331,46 +5907,38 @@
             
             // 渲染筛选栏（朋友/关注切换 + 排序方式 + 最右侧刷新按钮）
             fixedNavSection.innerHTML = `
-                <div class="fighters-container">
-                    <h2 style="margin: 0 0 12px 0;">🤼 格斗圈</h2>
-                    <div class="ranking-filters">
-                        <div class="ranking-region-btns">
-                            <button class="ranking-region-btn ${fightersState.listType === 'friend' ? 'active' : ''}" onclick="changeFightersTab('friend')">朋友</button>
-                            <button class="ranking-region-btn ${fightersState.listType === 'follow' ? 'active' : ''}" onclick="changeFightersTab('follow')">关注</button>
+                <div class="nav-panel${navPanelStates.fighters ? ' collapsed' : ''}" data-panel-id="fighters">
+                    <h2 onclick="toggleNavPanel('fighters')">🤼 格斗圈</h2>
+                    <div class="nav-panel-body">
+                        <div class="ranking-filters">
+                            <div class="ranking-region-btns">
+                                <button class="ranking-region-btn ${fightersState.listType === 'friend' ? 'active' : ''}" onclick="changeFightersTab('friend')">朋友</button>
+                                <button class="ranking-region-btn ${fightersState.listType === 'follow' ? 'active' : ''}" onclick="changeFightersTab('follow')">关注</button>
+                            </div>
+                            <div class="ranking-region-btns fighters-sort-nav">
+                                <button class="ranking-region-btn ${fightersState.orderType === 'gamemode' ? 'active' : ''}" onclick="changeFightersOrderType('gamemode')">游戏模式</button>
+                                <button class="ranking-region-btn ${fightersState.orderType === 'registered' ? 'active' : ''}" onclick="changeFightersOrderType('registered')">添加时间</button>
+                                <button class="ranking-region-btn ${fightersState.orderType === 'last_play' ? 'active' : ''}" onclick="changeFightersOrderType('last_play')">上次游戏日期</button>
+                                <button class="ranking-region-btn ${fightersState.orderType === 'league_rank' ? 'active' : ''}" onclick="changeFightersOrderType('league_rank')">段位</button>
+                            </div>
+                            <div class="ranking-region-btns">
+                                <button class="ranking-region-btn ${fightersState.orderOrder === 0 ? 'active' : ''}" onclick="changeFightersOrderOrder(0)">降序</button>
+                                <button class="ranking-region-btn ${fightersState.orderOrder === 1 ? 'active' : ''}" onclick="changeFightersOrderOrder(1)">升序</button>
+                            </div>
+                            <button class="fighters-refresh-btn" id="fightersRefreshBtn" onclick="refreshFightersData()" ${fightersState.loading ? 'disabled' : ''}>刷新</button>
                         </div>
-                        <div class="ranking-region-btns fighters-sort-nav">
-                            <button class="ranking-region-btn ${fightersState.orderType === 'gamemode' ? 'active' : ''}" onclick="changeFightersOrderType('gamemode')">游戏模式</button>
-                            <button class="ranking-region-btn ${fightersState.orderType === 'registered' ? 'active' : ''}" onclick="changeFightersOrderType('registered')">添加时间</button>
-                            <button class="ranking-region-btn ${fightersState.orderType === 'last_play' ? 'active' : ''}" onclick="changeFightersOrderType('last_play')">上次游戏日期</button>
-                            <button class="ranking-region-btn ${fightersState.orderType === 'league_rank' ? 'active' : ''}" onclick="changeFightersOrderType('league_rank')">段位</button>
-                        </div>
-                        <div class="ranking-region-btns">
-                            <button class="ranking-region-btn ${fightersState.orderOrder === 0 ? 'active' : ''}" onclick="changeFightersOrderOrder(0)">降序</button>
-                            <button class="ranking-region-btn ${fightersState.orderOrder === 1 ? 'active' : ''}" onclick="changeFightersOrderOrder(1)">升序</button>
-                        </div>
-                        <button class="fighters-refresh-btn" id="fightersRefreshBtn" onclick="refreshFightersData()" ${fightersState.loading ? 'disabled' : ''}>刷新</button>
+                        <div id="fightersStatus"></div>
                     </div>
-                    <div id="fightersStatus"></div>
                 </div>
             `;
             
             // 渲染数据区域
             if (fightersState.loading) {
-                battlesScrollArea.innerHTML = `
-                    <div style="height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding-bottom: 12%;">
-                        <div class="spinner" style="margin-bottom: 0;"></div>
-                        <div class="empty-state-text" style="color: #999999;">正在加载格斗圈列表...</div>
-                    </div>
-                `;
+                battlesScrollArea.innerHTML = loadingHtml('正在加载格斗圈列表...');
             } else if (cache) {
                 renderFightersList(battlesScrollArea);
             } else {
-                battlesScrollArea.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">🤼</div>
-                        <div class="empty-state-text">请先登录后查看格斗圈</div>
-                    </div>
-                `;
+                battlesScrollArea.innerHTML = emptyStateHtml('🤼', '请先登录后查看格斗圈');
             }
         }
         
@@ -5445,12 +6013,7 @@
             const listLabel = fightersState.listType === 'friend' ? '朋友' : '关注';
             
             if (rawList.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">🤼</div>
-                        <div class="empty-state-text">暂无${listLabel}数据</div>
-                    </div>
-                `;
+                container.innerHTML = emptyStateHtml('🤼', '暂无' + listLabel + '数据');
                 return;
             }
             
@@ -5474,7 +6037,7 @@
                         <div class="ranking-card-info">
                             <div class="ranking-card-name-row">
                                 ${platform ? `<span class="ranking-card-platform">${platform}</span>` : ''}
-                                <span class="ranking-player-name" ${shortId ? `onclick="queryPlayerById('${shortId}', event)" title="点击查询该玩家"` : ''}>${name}</span>
+                                <span class="ranking-player-name" ${shortId ? `onclick="queryPlayerById('${shortId}', event)"` : ''}>${name}</span>
                                 ${onlineStatus ? `<span class="fighters-online-status ${onlineOffline ? 'offline' : ''}">${onlineStatus}</span>` : ''}
                             </div>
                             <div class="ranking-card-meta">
@@ -5505,10 +6068,10 @@
             `;
             
             container.innerHTML = `
-                <div class="ranking-list">
-                    ${rows}
+                <div class="ranking-content">
+                    <div class="ranking-list">${rows}</div>
+                    ${paginationHtml}
                 </div>
-                ${paginationHtml}
             `;
         }
         
@@ -5600,12 +6163,7 @@
                     fightersState.loading = false;
                     fightersState.cache[fightersState.listType] = null;
                     renderFightersPage();
-                    document.getElementById('battlesScrollArea').innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-state-icon">❌</div>
-                            <div class="empty-state-text">${result.detail || '加载失败，请重试'}</div>
-                        </div>
-                    `;
+                    document.getElementById('battlesScrollArea').innerHTML = emptyStateHtml('❌', result.detail || '加载失败，请重试');
                     return false;
                 }
                 
@@ -5628,12 +6186,7 @@
                 } else {
                     fightersState.loading = false;
                     renderFightersPage();
-                    document.getElementById('battlesScrollArea').innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-state-icon">❌</div>
-                            <div class="empty-state-text">加载失败，请重试</div>
-                        </div>
-                    `;
+                    document.getElementById('battlesScrollArea').innerHTML = emptyStateHtml('❌', '加载失败，请重试');
                     return false;
                 }
             } catch (error) {
@@ -5644,12 +6197,7 @@
                 console.error('格斗圈请求异常:', error);
                 fightersState.loading = false;
                 renderFightersPage();
-                document.getElementById('battlesScrollArea').innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">❌</div>
-                        <div class="empty-state-text">请求失败: ${error.message}</div>
-                    </div>
-                `;
+                document.getElementById('battlesScrollArea').innerHTML = emptyStateHtml('❌', '请求失败: ' + error.message);
                 return false;
             }
         }
@@ -5775,12 +6323,7 @@
             const battlesScrollArea = document.getElementById('battlesScrollArea');
             
             if (!isLoggedIn && !isQueryMode) {
-                fixedNavSection.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">🔒</div>
-                        <div class="empty-state-text">请先登录后查看战绩</div>
-                    </div>
-                `;
+                fixedNavSection.innerHTML = emptyStateHtml('🔒', '请先登录后查看战绩');
                 battlesScrollArea.innerHTML = '';
                 return;
             }
@@ -5826,12 +6369,7 @@
                 // 角色对阵胜率模式
                 battlesScrollArea.innerHTML = renderRivalWinrateContent();
             } else if (matchData.length === 0) {
-                battlesScrollArea.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📊</div>
-                        <div class="empty-state-text">暂无对战记录</div>
-                    </div>
-                `;
+                battlesScrollArea.innerHTML = emptyStateHtml('📊', '暂无对战记录');
             } else {
                 // 渲染折线图和战绩列表
                 let scrollableHtml = renderLineChart();
@@ -6188,32 +6726,17 @@
         // 渲染角色对阵胜率内容（在可滚动区域）
         function renderRivalWinrateContent() {
             if (!playerProfile || !playerProfile.character_win_rates_by_rival || playerProfile.character_win_rates_by_rival.length === 0) {
-                return `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📊</div>
-                        <div class="empty-state-text">暂无角色对阵数据，请刷新页面重新获取</div>
-                    </div>
-                `;
+                return emptyStateHtml('📊', '暂无角色对阵数据，请刷新页面重新获取');
             }
             
             if (!selectedRivalCharId) {
-                return `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">👆</div>
-                        <div class="empty-state-text">请在右上角下拉框中选择一个角色</div>
-                    </div>
-                `;
+                return emptyStateHtml('👆', '请在右上角下拉框中选择一个角色');
             }
             
             // 找到选中角色的数据
             const charData = playerProfile.character_win_rates_by_rival.find(c => c.character_id === selectedRivalCharId);
             if (!charData || !charData.rival_character_win_rates) {
-                return `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">❓</div>
-                        <div class="empty-state-text">该角色暂无对阵数据</div>
-                    </div>
-                `;
+                return emptyStateHtml('❓', '该角色暂无对阵数据');
             }
             
             // 过滤掉battle_count为0的数据，并按对战次数降序排列
@@ -6222,12 +6745,7 @@
                 .sort((a, b) => b.battle_count - a.battle_count);
             
             if (rivalStats.length === 0) {
-                return `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📭</div>
-                        <div class="empty-state-text">该角色暂无有效对战数据</div>
-                    </div>
-                `;
+                return emptyStateHtml('📭', '该角色暂无有效对战数据');
             }
             
             const charName = getCharacterNameById(selectedRivalCharId);
@@ -6296,8 +6814,9 @@
             
             // 渲染查询表单
             fixedNavSection.innerHTML = `
-                <div class="query-container">
-                    <h2>查询玩家战绩</h2>
+                <div class="query-container nav-panel${navPanelStates.query ? ' collapsed' : ''}" data-panel-id="query">
+                    <h2 onclick="toggleNavPanel('query')">查询玩家战绩</h2>
+                    <div class="nav-panel-body">
                     
                     <!-- 搜索框和按钮 -->
                     <div class="search-bar">
@@ -6358,6 +6877,7 @@
                                 `).join('')}
                             </div>`
                         }
+                    </div>
                     </div>
                 </div>
             `;
@@ -6670,12 +7190,14 @@
             
             // 渲染筛选栏
             fixedNavSection.innerHTML = `
-                <div class="ranking-container">
-                    <h2>📌 收藏对局</h2>
-                    <div class="fav-filter-bar">
-                        <div class="fav-filter-tab ${favBattleFilter === 'all' ? 'active' : ''}" onclick="setFavFilter('all')">全部<span class="fav-count">${totalCount}</span></div>
-                        <div class="fav-filter-tab ${favBattleFilter === 'pending' ? 'active' : ''}" onclick="setFavFilter('pending')">待看<span class="fav-count">${pendingCount}</span></div>
-                        <div class="fav-filter-tab ${favBattleFilter === 'watched' ? 'active' : ''}" onclick="setFavFilter('watched')">已看<span class="fav-count">${watchedCount}</span></div>
+                <div class="nav-panel${navPanelStates.favorites ? ' collapsed' : ''}" data-panel-id="favorites">
+                    <h2 onclick="toggleNavPanel('favorites')">📌 收藏对局</h2>
+                    <div class="nav-panel-body">
+                        <div class="fav-filter-bar">
+                            <div class="fav-filter-tab ${favBattleFilter === 'all' ? 'active' : ''}" onclick="setFavFilter('all')">全部<span class="fav-count">${totalCount}</span></div>
+                            <div class="fav-filter-tab ${favBattleFilter === 'pending' ? 'active' : ''}" onclick="setFavFilter('pending')">待看<span class="fav-count">${pendingCount}</span></div>
+                            <div class="fav-filter-tab ${favBattleFilter === 'watched' ? 'active' : ''}" onclick="setFavFilter('watched')">已看<span class="fav-count">${watchedCount}</span></div>
+                        </div>
                     </div>
                 </div>
             `;
@@ -6692,12 +7214,7 @@
             if (filteredBattles.length === 0) {
                 const emptyMsg = favBattleFilter === 'all' ? '还没有收藏对局，在战绩列表中点击 ☆ 收藏' :
                     favBattleFilter === 'pending' ? '没有待看的对局' : '没有已看的对局';
-                battlesScrollArea.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📌</div>
-                        <div class="empty-state-text">${emptyMsg}</div>
-                    </div>
-                `;
+                battlesScrollArea.innerHTML = emptyStateHtml('📌', emptyMsg);
                 return;
             }
             
@@ -7167,12 +7684,7 @@
             `;
             
             if (pageData.length === 0) {
-                html += `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📊</div>
-                        <div class="empty-state-text">暂无对战记录</div>
-                    </div>
-                `;
+                html += emptyStateHtml('📊', '暂无对战记录');
             } else {
                 pageData.forEach(record => {
                     const resultClass = (record.my_result || '').toLowerCase().includes('胜') || (record.my_result || '').toLowerCase().includes('win') ? 'win' : 'lose';
@@ -8156,11 +8668,22 @@
                 
                 if (data.success) {
                     matchData = data.data || [];
+                    currentPage = 1;  // 刷新后页码回到第一页
                     // 注意：不更新currentUserInfo，保持原有用户信息显示
                     
                     // 保存玩家资料
                     if (data.player_profile) {
                         playerProfile = data.player_profile;
+                    }
+                    
+                    // 同步回对应数据缓存，避免切换导航后返回时被旧缓存覆盖
+                    if (isQueryMode && queriedUserId) {
+                        queryData.matchData = matchData;
+                        queryData.profile = playerProfile;
+                    } else {
+                        homeData.matchData = matchData;
+                        homeData.userInfo = currentUserInfo;
+                        homeData.profile = playerProfile;
                     }
                     
                     renderMatchCards();

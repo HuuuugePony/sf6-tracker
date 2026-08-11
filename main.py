@@ -69,6 +69,14 @@ class RankingRequest(BaseModel):
     cookie: str = None  # 可选的cookie参数
 
 
+class RankingStatsRequest(BaseModel):
+    """排行榜数据统计请求（聚合传奇段位前N名）"""
+    top_n: int = 500  # 聚合前N名玩家（传奇段位）
+    home_filter: int = 1  # 地区筛选: 1=全球, 3=地区（中国）
+    force: bool = False  # 是否忽略缓存强制重新统计
+    cookie: str = None  # 可选的cookie参数
+
+
 class FightersListRequest(BaseModel):
     """格斗圈（朋友/关注）列表请求"""
     list_type: str = 'friend'  # 列表类型: friend=朋友, follow=关注
@@ -550,6 +558,153 @@ def get_ranking(request: RankingRequest):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取排行榜失败: {str(e)}")
+
+
+# ==================== 排行榜数据统计（传奇段位前500聚合） ====================
+
+RANKING_STATS_CACHE_TTL = 30 * 60  # 统计结果缓存30分钟
+# 按地区分别缓存: key=(top_n, home_filter)
+ranking_stats_cache = {}
+
+
+def _fetch_ranking_page(crawler, page, home_filter=1):
+    """拉取指定页的全角色Master排行榜，返回ranking_fighter_list"""
+    home_category_id = 7 if home_filter == 3 else 0
+    home_id = 36 if home_filter == 3 else 0
+    url = (
+        f'{crawler.api_base_url}/{crawler.build_id}/{crawler.lang}/ranking/master.json'
+        f'?character_filter=1&platform=1&home_filter={home_filter}'
+        f'&home_category_id={home_category_id}&home_id={home_id}&page={page}&season_type=1'
+    )
+    resp = crawler.session.get(url, timeout=10)
+    if resp.status_code != 200:
+        return []
+    try:
+        data = resp.json()
+    except Exception:
+        return []
+    return data.get('pageProps', {}).get('master_rating_ranking', {}).get('ranking_fighter_list', []) or []
+
+
+@app.post("/api/ranking-stats")
+def get_ranking_stats(request: RankingStatsRequest):
+    """排行榜数据统计：聚合全球Master榜前N名（传奇段位）
+    返回：1.角色使用情况（数量/占比） 2.MR分段占比 3.角色平均排名
+    """
+    global query_crawler
+
+    try:
+        start_time = time.time()
+        top_n = max(1, min(request.top_n or 500, 1000))
+        home_filter = 3 if request.home_filter == 3 else 1
+        cache_key = (top_n, home_filter)
+
+        # 缓存有效时直接返回（force时跳过缓存强制重新统计）
+        cached = ranking_stats_cache.get(cache_key)
+        if not request.force and cached \
+                and time.time() - cached.get('fetched_at', 0) < RANKING_STATS_CACHE_TTL:
+            return {**cached.get('data'), "from_cache": True}
+
+        cookie_to_use = None
+        if request.cookie:
+            cookie_to_use = request.cookie
+        elif stored_cookie:
+            cookie_to_use = stored_cookie
+
+        if not cookie_to_use:
+            raise HTTPException(status_code=403, detail="排行榜统计需要登录后才能查看，请先登录")
+
+        if query_crawler is None or query_crawler.headers.get('cookie') != cookie_to_use:
+            query_crawler = SF6BattleLogCrawler(cookie=cookie_to_use)
+
+        # 先拉第1页，确认数据可用并获取每页条数
+        first_page = _fetch_ranking_page(query_crawler, 1, home_filter)
+        if not first_page:
+            raise HTTPException(status_code=403, detail="排行榜数据获取失败，请先登录或稍后重试")
+
+        page_size = len(first_page) or 20
+        pages_needed = min((top_n + page_size - 1) // page_size, 50)
+
+        players = list(first_page)
+        if pages_needed > 1:
+            # 并发拉取剩余页
+            from concurrent.futures import ThreadPoolExecutor
+            with ThreadPoolExecutor(max_workers=8) as executor:
+                results = list(executor.map(lambda p: _fetch_ranking_page(query_crawler, p, home_filter), range(2, pages_needed + 1)))
+            for page_list in results:
+                players.extend(page_list)
+        players = players[:top_n]
+        total = len(players)
+
+        # 聚合统计
+        char_map = {}
+        # MR分段根据实际分布动态生成：百位分段，跨度过大时用200步长
+        ratings = sorted([p.get('rating') or 0 for p in players if (p.get('rating') or 0) > 0])
+        mr_buckets = []
+        if ratings:
+            top = (ratings[-1] // 100) * 100
+            bottom = (ratings[0] // 100) * 100
+            step = 100 if (top - bottom) <= 1400 else 200
+            cur = top
+            while True:
+                mr_buckets.append({"label": f"{cur}-{cur + step - 1}", "min": cur, "count": 0})
+                if cur <= bottom:
+                    break
+                cur -= step
+            mr_buckets.append({"label": f"{cur - 1}以下", "min": 0, "count": 0})
+        else:
+            mr_buckets = [{"label": "无MR数据", "min": 0, "count": 0}]
+        for p in players:
+            tool = p.get('character_tool_name') or str(p.get('character_id', ''))
+            name = p.get('character_name') or tool
+            c = char_map.setdefault(tool, {"tool": tool, "name": name, "count": 0, "rank_sum": 0})
+            c["count"] += 1
+            rank = p.get('master_rating_ranking')
+            if isinstance(rank, int) and rank > 0:
+                c["rank_sum"] += rank
+            rating = p.get('rating') or 0
+            for b in mr_buckets:
+                if rating >= b["min"]:
+                    b["count"] += 1
+                    break
+
+        character_usage = []
+        char_avg_rank = []
+        for c in char_map.values():
+            pct = round(c["count"] * 100.0 / total, 1) if total else 0
+            character_usage.append({"tool": c["tool"], "name": c["name"], "count": c["count"], "percent": pct})
+            char_avg_rank.append({
+                "tool": c["tool"], "name": c["name"], "count": c["count"],
+                "avg_rank": round(c["rank_sum"] / c["count"], 1) if c["count"] else 0
+            })
+        character_usage.sort(key=lambda x: (-x["count"], x["tool"]))
+        char_avg_rank.sort(key=lambda x: x["avg_rank"])
+
+        mr_distribution = [
+            {"label": b["label"], "count": b["count"], "percent": round(b["count"] * 100.0 / total, 1) if total else 0}
+            for b in mr_buckets
+        ]
+
+        result = {
+            "success": True,
+            "top_n": total,
+            "home_filter": home_filter,
+            "updated_at": int(time.time()),
+            "character_usage": character_usage,
+            "mr_distribution": mr_distribution,
+            "char_avg_rank": char_avg_rank,
+        }
+        ranking_stats_cache[cache_key] = {"data": result, "fetched_at": time.time()}
+
+        elapsed = time.time() - start_time
+        print(f'[排行榜统计] 耗时: {elapsed:.2f}s, 聚合{total}名玩家 (home_filter={home_filter})')
+
+        return {**result, "from_cache": False}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"获取排行榜统计失败: {str(e)}")
 
 
 @app.post("/api/fighters-list")
