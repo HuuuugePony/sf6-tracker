@@ -739,56 +739,6 @@
             display: flex;
         }
         
-        /* 局部加载：不再压暗整个内容区，改为透明遮罩+悬浮加载胶囊 */
-        .local-loading-overlay {
-            display: none;
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            width: 100%;
-            height: 100%;
-            background: transparent;
-            z-index: 100;
-            justify-content: center;
-            align-items: flex-start;
-            border-radius: 2px;
-        }
-        
-        .local-loading-overlay.show {
-            display: flex;
-        }
-        
-        .local-loading-card {
-            margin-top: 8px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 18px;
-            background: rgba(26,26,26,0.92);
-            border: 1px solid rgba(255,255,255,0.12);
-            border-radius: 999px;
-            box-shadow: 0 6px 24px rgba(0,0,0,0.45);
-            animation: localLoadingIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        @keyframes localLoadingIn {
-            from { opacity: 0; transform: translateY(-8px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .local-loading-card .spinner {
-            width: 16px;
-            height: 16px;
-            border-width: 2px;
-            margin-bottom: 0;
-        }
-        
-        .local-loading-card .loading-text {
-            font-size: 12px;
-        }
-        
         .spinner {
             border: 3px solid #2a2a2a;
             border-top: 3px solid #ffffff;
@@ -824,65 +774,48 @@
             font-weight: 500;
         }
         
-        .refresh-btn {
+        /* 全站刷新按钮统一样式：50×28 绿色渐变（.refresh-btn / .ranking-refresh-btn / .fighters-refresh-btn 共用） */
+        .refresh-btn,
+        .ranking-refresh-btn,
+        .fighters-refresh-btn {
+            width: 50px;
+            height: 28px;
+            box-sizing: border-box;
+            padding: 0;
             background: linear-gradient(135deg, #1a8a4a 0%, #27ae60 100%);
             color: white;
-            padding: 5px 14px;
             border: 1px solid rgba(39, 174, 96, 0.3);
             border-radius: 8px;
-            font-size: 11px;
+            font-size: 12px;
             cursor: pointer;
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
+            display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 5px;
             font-weight: 600;
             box-shadow: 0 2px 8px rgba(39, 174, 96, 0.25);
+            white-space: nowrap;
         }
         
-        .refresh-btn:hover {
+        .refresh-btn:hover:not(:disabled),
+        .ranking-refresh-btn:hover:not(:disabled),
+        .fighters-refresh-btn:hover:not(:disabled) {
             background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
             box-shadow: 0 4px 14px rgba(39, 174, 96, 0.4);
         }
         
-        .refresh-btn:disabled {
-            background: #95a5a6;
-            cursor: not-allowed;
-        }
-        
-        /* 筛选栏最右侧的刷新按钮：尺寸与左侧筛选按钮一致 */
-        .fighters-refresh-btn {
-            margin-left: auto;
-            height: 28px;
-            padding: 0 12px;
-            font-size: 12px;
-            background: rgba(255,255,255,0.03);
-            color: #999999;
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .fighters-refresh-btn:hover:not(:disabled) {
-            background: rgba(255,255,255,0.06);
-            color: #cccccc;
-        }
-        
+        /* 加载中仅置灰，不改变底色 */
+        .refresh-btn:disabled,
+        .ranking-refresh-btn:disabled,
         .fighters-refresh-btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
         
-        body.light-theme .fighters-refresh-btn {
-            background: rgba(0,0,0,0.03);
-            color: #666666;
-            border-color: rgba(0,0,0,0.1);
-        }
-        
-        body.light-theme .fighters-refresh-btn:hover:not(:disabled) {
-            background: rgba(0,0,0,0.06);
-            color: #333333;
+        /* 筛选栏最右侧的刷新按钮：尺寸样式由上方统一规则提供，此处仅保留布局 */
+        .fighters-refresh-btn {
+            margin-left: auto;
         }
         
         .pagination {
@@ -1864,37 +1797,12 @@
             margin: 0;
             padding: 0 12px 6px 12px;
             border-bottom: 1px solid rgba(255,255,255,0.08);
-            cursor: pointer;
-            user-select: none;
             display: flex;
             align-items: center;
         }
         
-        /* 收缩/展开箭头 */
-        .nav-panel > h2::after {
-            content: '▾';
-            margin-left: auto;
-            font-size: 10px;
-            color: #666666;
-            transition: transform 0.2s ease;
-        }
-        
-        .nav-panel.collapsed > h2::after {
-            transform: rotate(-90deg);
-        }
-        
-        .nav-panel.collapsed > h2 {
-            margin-bottom: 0;
-            border-bottom-color: transparent;
-        }
-        
         .nav-panel-body {
             overflow: hidden;
-            transition: max-height 0.25s ease;
-        }
-        
-        .nav-panel.collapsed .nav-panel-body {
-            display: none;
         }
         
         /* ========== 查询页面样式 ========== */
@@ -2300,9 +2208,11 @@
             padding: 0 12px 0 0;
         }
         
-        /* 筛选栏内小号按钮（与之前二级导航内尺寸一致） */
+        /* 筛选栏内按钮统一28px高（与角色选择/刷新按钮一致） */
         .ranking-filters .ranking-region-btn {
-            padding: 4px 12px;
+            height: 28px;
+            box-sizing: border-box;
+            padding: 0 12px;
             font-size: 12px;
         }
         
@@ -2320,7 +2230,9 @@
         }
         
         .ranking-region-btn {
-            padding: 7px 18px;
+            height: 28px;
+            box-sizing: border-box;
+            padding: 0 18px;
             font-size: 13px;
             background: rgba(255,255,255,0.03);
             color: #999999;
@@ -2354,6 +2266,7 @@
             display: flex;
             align-items: center;
             padding: 2px 10px;
+            height: 65px;
             min-height: 0;
             background: linear-gradient(145deg, #1a1a1a 0%, #171717 100%);
             border: 1px solid rgba(255,255,255,0.06);
@@ -2364,6 +2277,20 @@
             cursor: pointer;
             position: relative;
             overflow: hidden;
+        }
+        
+        /* 卡片紧凑排版：三行信息适配固定卡片高度（排行榜/格斗圈卡片结构一致） */
+        .ranking-card .ranking-card-info {
+            gap: 2px;
+        }
+        
+        .ranking-card .ranking-player-name {
+            line-height: 1.2;
+        }
+        
+        .ranking-card .ranking-card-meta,
+        .ranking-card .ranking-card-title {
+            line-height: 1.2;
         }
         
         /* cover遮罩效果：悬停轻提亮，点击瞬间白色遮罩覆盖全卡（选中反馈） */
@@ -2592,7 +2519,7 @@
         
         /* 右侧竖线（图片和分数之间）右移，右侧区域整体拉长 */
         .ranking-card-visual + .ranking-card-divider {
-            margin-left: 52px;
+            margin-left: 100px;
         }
         
         .ranking-card-char {
@@ -2609,7 +2536,7 @@
         /* 排行榜图片区内：角色在底图右缘并大幅向外凸出，压过竖线伸向分数区 */
         .ranking-card-visual .ranking-card-char {
             margin-left: auto;
-            margin-right: -26px;
+            margin-right: -50px;
             z-index: 1;
         }
         
@@ -2726,6 +2653,11 @@
             justify-content: flex-start;
         }
         
+        /* 格斗圈二级导航（朋友/关注/屏蔽，复用sub-nav样式） */
+        .fighters-sub-nav {
+            justify-content: flex-start;
+        }
+        
         /* 二级导航内筛选区（小号控件，靠右） */
         .ranking-sub-nav-filters {
             margin-left: auto;
@@ -2736,28 +2668,13 @@
         }
         
         .ranking-sub-nav-filters .ranking-region-btn {
-            padding: 4px 12px;
-            font-size: 12px;
-        }
-        
-        .ranking-refresh-btn {
             height: 28px;
+            box-sizing: border-box;
             padding: 0 12px;
             font-size: 12px;
-            background: rgba(255,255,255,0.04);
-            color: #cccccc;
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            white-space: nowrap;
         }
         
-        .ranking-refresh-btn:hover {
-            background: rgba(255,255,255,0.1);
-            color: #ffffff;
-            border-color: rgba(255,255,255,0.2);
-        }
+        /* .ranking-refresh-btn 尺寸与配色由顶部统一刷新按钮规则提供（50×28 绿色渐变） */
         
         /* ==================== 排行榜数据统计样式 ==================== */
         .ranking-stats-wrap {
@@ -2883,6 +2800,12 @@
         
         .fighters-sort-nav .ranking-region-btn:not(:last-child) {
             border-right: 1px solid rgba(255,255,255,0.08);
+        }
+        
+        /* 格斗圈卡片：左侧无名次列，底图仅需左延10px内边距即顶到卡片最左缘 */
+        .fighters-card .ranking-card-emblem {
+            left: -10px;
+            width: calc(100% + 10px);
         }
         
         /* ==================== 设置面板样式 ==================== */
@@ -3200,13 +3123,6 @@
         body.light-theme .empty-state { color: #999; }
         /* Loading overlays */
         body.light-theme .loading-overlay { background: rgba(255,255,255,0.9); }
-        body.light-theme .local-loading-overlay { background: transparent; }
-        body.light-theme .local-loading-card {
-            background: rgba(255,255,255,0.95);
-            border-color: #dee2e6;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.12);
-        }
-        body.light-theme .local-loading-card .loading-text { color: #555; }
         body.light-theme .spinner {
             border-color: #dee2e6; border-top-color: #4a9eff;
         }
@@ -3386,8 +3302,13 @@
             background: linear-gradient(135deg, #dee2e6 0%, #ced4da 100%);
             box-shadow: 0 2px 6px rgba(0,0,0,0.1);
         }
+        /* 全站刷新按钮亮色主题下保持绿色渐变（含排行榜/格斗圈刷新） */
         body.light-theme .refresh-btn,
-        body.light-theme .refresh-btn:hover {
+        body.light-theme .refresh-btn:hover,
+        body.light-theme .ranking-refresh-btn,
+        body.light-theme .ranking-refresh-btn:hover,
+        body.light-theme .fighters-refresh-btn,
+        body.light-theme .fighters-refresh-btn:hover {
             background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
             color: white; border-color: #444444;
             box-shadow: 0 2px 6px rgba(39, 174, 96, 0.4);
@@ -3395,9 +3316,6 @@
         /* Nav panel h2 (unified) */
         body.light-theme .nav-panel > h2 {
             color: #333; border-bottom-color: #dee2e6;
-        }
-        body.light-theme .nav-panel.collapsed > h2 {
-            border-bottom-color: transparent;
         }
         body.light-theme .search-bar input {
             background: #ffffff; color: #333; border-color: #dee2e6;
@@ -3535,12 +3453,6 @@
         body.light-theme .ranking-page-input:focus {
             background: #ffffff; border-color: #adb5bd;
         }
-        body.light-theme .ranking-refresh-btn {
-            background: #f0f2f5; border-color: #dee2e6; color: #333;
-        }
-        body.light-theme .ranking-refresh-btn:hover {
-            background: #e9ecef; border-color: #adb5bd; color: #111;
-        }
         body.light-theme .ranking-stats-note { color: #888; }
         body.light-theme .rstat-card {
             background: #ffffff; border-color: #e0e0e0;
@@ -3610,37 +3522,15 @@
             opacity: 1;
             color: #f39c12;
         }
-        .fav-filter-bar {
-            display: flex;
-            gap: 0;
-            border-bottom: 1px solid rgba(255,255,255,0.06);
-            margin-bottom: 10px;
-            padding: 0 12px;
-        }
-        .fav-filter-tab {
-            padding: 8px 16px;
-            font-size: 12px;
-            color: #999;
-            cursor: pointer;
-            border-bottom: 2px solid transparent;
-            margin-bottom: -2px;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .fav-filter-tab:hover {
-            color: #ccc;
-        }
-        .fav-filter-tab.active {
-            color: #fff;
-            border-bottom-color: #f39c12;
-        }
-        .fav-filter-tab .fav-count {
+        /* 收藏二级导航已统一为.sub-nav/.sub-nav-item，仅保留数量徽标样式 */
+        .fav-count {
             font-size: 10px;
-            background: rgba(255,255,255,0.06);
+            background: rgba(255,255,255,0.08);
             padding: 1px 5px;
             border-radius: 8px;
             margin-left: 4px;
         }
-        .fav-filter-tab.active .fav-count {
+        .sub-nav-item.active .fav-count {
             background: #f39c12;
             color: #000;
         }
@@ -3693,23 +3583,10 @@
             gap: 8px;
         }
         /* 收藏对局亮色主题 */
-        body.light-theme .fav-filter-bar {
-            border-bottom-color: #dee2e6;
-        }
-        body.light-theme .fav-filter-tab {
-            color: #666;
-        }
-        body.light-theme .fav-filter-tab:hover {
-            color: #333;
-        }
-        body.light-theme .fav-filter-tab.active {
-            color: #333;
-            border-bottom-color: #e67e22;
-        }
-        body.light-theme .fav-filter-tab .fav-count {
+        body.light-theme .fav-count {
             background: #e9ecef;
         }
-        body.light-theme .fav-filter-tab.active .fav-count {
+        body.light-theme .sub-nav-item.active .fav-count {
             background: #e67e22;
             color: #fff;
         }
@@ -3949,7 +3826,6 @@
             padding-right: 16px;
             margin-bottom: 12px;
         }
-        body.spacious-mode .fav-filter-bar,
         body.spacious-mode .search-bar {
             padding-left: 16px;
             padding-right: 16px;
@@ -4138,11 +4014,6 @@
             border-bottom: 1px solid transparent !important;
             border-image: linear-gradient(90deg, rgba(0,195,255,0.5), rgba(255,212,0,0.45), transparent) 1 !important;
         }
-        /* 收缩时底边线隐藏 */
-        body.sf6-theme .nav-panel.collapsed > h2 {
-            border-bottom-color: transparent !important;
-            border-image: none !important;
-        }
         body.sf6-theme .profile-header { border-bottom-color: rgba(255, 212, 0, 0.25) !important; }
         /* 春丽主题下页面底色偏蓝，玩家信息卡需要更明显的描边+阴影才能从底色中浮出 */
         body.sf6-theme .player-profile-section {
@@ -4258,12 +4129,6 @@
         body.sf6-theme .spinner {
             border-top-color: #00c3ff !important;
         }
-        body.sf6-theme .local-loading-card {
-            background: rgba(12, 20, 48, 0.95) !important;
-            border-color: rgba(0, 195, 255, 0.35) !important;
-            box-shadow: 0 6px 24px rgba(0, 120, 255, 0.35) !important;
-        }
-        body.sf6-theme .local-loading-card .loading-text { color: #dbe7ff !important; }
         body.sf6-theme .empty-state-text { color: #8fa4c9 !important; }
 
         /* 滚动条：电蓝配色 */
@@ -4338,7 +4203,18 @@
             border-color: rgba(0, 195, 255, 0.2) !important;
             color: #9db1d6 !important;
         }
-        body.sf6-theme .fighters-refresh-btn { background: rgba(0, 195, 255, 0.08) !important; border-color: rgba(0, 195, 255, 0.22) !important; }
+        /* 春丽主题刷新按钮同样保持绿色渐变，不参与宝蓝覆盖 */
+        body.sf6-theme .refresh-btn,
+        body.sf6-theme .refresh-btn:hover:not(:disabled),
+        body.sf6-theme .ranking-refresh-btn,
+        body.sf6-theme .ranking-refresh-btn:hover:not(:disabled),
+        body.sf6-theme .fighters-refresh-btn,
+        body.sf6-theme .fighters-refresh-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, #1a8a4a 0%, #27ae60 100%) !important;
+            border-color: rgba(39, 174, 96, 0.5) !important;
+            color: #ffffff !important;
+            box-shadow: 0 2px 10px rgba(39, 174, 96, 0.35) !important;
+        }
         body.sf6-theme .chart-toggle-btn:disabled { background: rgba(0, 195, 255, 0.04) !important; color: #54628a !important; }
 
         /* 经典/现代操作标签：保留官方紫/橙配色，不参与蓝化 */
@@ -4374,7 +4250,7 @@
             background: rgba(0, 195, 255, 0.1) !important;
             border-color: rgba(0, 195, 255, 0.4) !important;
         }
-        body.sf6-theme .fav-filter-bar { border-bottom-color: rgba(0, 195, 255, 0.15) !important; }
+        body.sf6-theme .fav-count { background: rgba(0, 195, 255, 0.12) !important; color: #9db1d6; }
 
         /* 灰色辅助文字 → 蓝灰，整体色调统一 */
         body.sf6-theme .header-quote,
@@ -4631,8 +4507,8 @@
             font-weight: 600;
         }
 
-        /* 查询页sub-nav靠左排列，不两端撑开 */
-        .nav-panel-body .sub-nav { justify-content: flex-start; border: none; background: transparent; margin: 4px 0; }
+        /* 面板内sub-nav靠左排列，不两端撑开；描边与底色沿用基础.sub-nav，与主页统一 */
+        .nav-panel-body .sub-nav { justify-content: flex-start; margin: 8px 0; }
 
         /* ---- 名字搜索区域 ---- */
         .name-search-section {

@@ -501,7 +501,11 @@ body.light-theme .report-period-btn.active {
     font-weight: 600 !important;
 }
 body.light-theme .refresh-btn,
-body.light-theme .refresh-btn:hover {
+body.light-theme .refresh-btn:hover,
+body.light-theme .ranking-refresh-btn,
+body.light-theme .ranking-refresh-btn:hover,
+body.light-theme .fighters-refresh-btn,
+body.light-theme .fighters-refresh-btn:hover {
     background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%) !important;
     color: white !important;
     border-color: #444444 !important;
@@ -718,16 +722,10 @@ body.light-theme .ranking-page-btn {
     border-radius: 6px !important;
 }
 
-/* 收藏筛选栏 */
-.fav-filter-bar {
-    border-bottom: 1px solid rgba(255,255,255,0.06) !important;
-}
+/* 收藏筛选（二级导航已统一为.sub-nav，仅保留状态按钮圆角） */
 .fav-status-btn {
     border-radius: 6px !important;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
-}
-body.light-theme .fav-filter-bar {
-    border-bottom-color: #dee2e6 !important;
 }
 
 /* ==================== 春丽主题 - 桌面端适配 ==================== */

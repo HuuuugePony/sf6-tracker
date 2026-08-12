@@ -51,20 +51,6 @@
         let favBattleFilter = 'all';  // 收藏对局筛选: all/pending/watched
         let querySubTab = 'search';  // 查询页子标签: 'search' | 'footprint'
         
-        // 导航面板收缩状态（各面板独立收缩，持久化到 localStorage）
-        let navPanelStates = { ranking: false, fighters: false, query: false, favorites: false };
-        try {
-            const saved = localStorage.getItem('sf6_nav_panel_states');
-            if (saved) Object.assign(navPanelStates, JSON.parse(saved));
-        } catch(e) {}
-        
-        function toggleNavPanel(panelId) {
-            navPanelStates[panelId] = !navPanelStates[panelId];
-            try { localStorage.setItem('sf6_nav_panel_states', JSON.stringify(navPanelStates)); } catch(e) {}
-            const panel = document.querySelector(`.nav-panel[data-panel-id="${panelId}"]`);
-            if (panel) panel.classList.toggle('collapsed');
-        }
-        
         // 路由处理 - 根据URL路径和参数显示不同页面
         function handleRoute(shouldRefreshHome = false) {
             const path = window.location.pathname;
@@ -182,8 +168,8 @@
             try {
                 if (queryBtn) queryBtn.disabled = true;
                 
-                // 显示局部加载提示
-                showLocalLoading(`正在查询玩家 ${userId} ...`);
+                // 统一加载显示：内容区spinner（无遮罩不阻挡操作）
+                document.getElementById('battlesScrollArea').innerHTML = loadingHtml(`正在查询玩家 ${userId} ...`);
                 
                 const response = await fetch(`${API_BASE}/api/query-player`, {
                     method: 'POST',
@@ -216,20 +202,24 @@
                         updateFavoritePlayerName(userId, currentUserInfo.player_name);
                     }
                     
-                    // 渲染内容
-                    renderContent();
+                    // 渲染内容（用户已切走页面时不弹回，数据已保存，切回后重新进入即可查看）
+                    if (isBattlePageActive()) {
+                        renderContent();
+                    }
                 } else {
-                    renderQueryPage();
-                    showStatus('queryStatus', `❌ 查询失败`, 'error');
+                    if (lastActiveTab === 'query') {
+                        renderQueryPage();
+                        showStatus('queryStatus', `❌ 查询失败`, 'error');
+                    }
                 }
             } catch (error) {
                 console.error('查询请求异常:', error);
-                renderQueryPage();
-                showStatus('queryStatus', `❌ 查询失败: ${error.message}`, 'error');
+                if (lastActiveTab === 'query') {
+                    renderQueryPage();
+                    showStatus('queryStatus', `❌ 查询失败: ${error.message}`, 'error');
+                }
             } finally {
                 if (queryBtn) queryBtn.disabled = false;
-                // 隐藏局部加载提示
-                hideLocalLoading();
             }
         }
         
@@ -310,32 +300,22 @@
             console.warn('后端服务启动超时，请手动刷新');
         }
 
-        function showLoading() {
-            document.getElementById('loadingOverlay').classList.add('show');
+        function showLoading(text) {
+            const overlay = document.getElementById('loadingOverlay');
+            if (text) {
+                const txt = overlay.querySelector('.loading-text');
+                if (txt) txt.textContent = text;
+            }
+            overlay.classList.add('show');
         }
 
         function hideLoading() {
             document.getElementById('loadingOverlay').classList.remove('show');
         }
         
-        function showLocalLoading(text = '全力加载中！') {
-            const localLoading = document.getElementById('localLoadingOverlay');
-            const loadingText = document.getElementById('loadingText');
-            if (localLoading) {
-                if (loadingText) {
-                    loadingText.textContent = text;
-                }
-                // 清除可能被设置页残留的内联隐藏样式，确保.show类生效
-                localLoading.style.display = '';
-                localLoading.classList.add('show');
-            }
-        }
-        
-        function hideLocalLoading() {
-            const localLoading = document.getElementById('localLoadingOverlay');
-            if (localLoading) {
-                localLoading.classList.remove('show');
-            }
+        // 是否停留在主页/查询页：异步完成回调据此决定是否更新界面（后台加载不弹回用户已切走的页面）
+        function isBattlePageActive() {
+            return lastActiveTab === 'home' || lastActiveTab === 'query';
         }
         
         function showLoginModal() {
@@ -493,14 +473,11 @@
             // 隐藏主内容，显示设置面板
             document.getElementById('scrollableContent').style.display = 'none';
             document.getElementById('settingsPanel').style.display = 'block';
-            document.getElementById('localLoadingOverlay').style.display = 'none';
         }
         
         function hideSettingsPage() {
             document.getElementById('scrollableContent').style.display = '';
             document.getElementById('settingsPanel').style.display = 'none';
-            // 恢复加载遮罩的显示控制（进入设置页时被内联样式隐藏）
-            document.getElementById('localLoadingOverlay').style.display = '';
         }
         
         // 主题切换（dark / light / sf6）
@@ -652,6 +629,16 @@
             }
             return `https://www.streetfighter.com/6/buckler/assets/images/material/rank/rank${n}_l.png`;
         }
+        
+        // 格斗圈段位图标：直接用API返回的真实段位（实测：league_rank为真实段位号，1-37为LP/大师段位、39为传奇；
+        // master_league为传奇MR细分档39-42，如MR1720→41；官网图标rank1-37、39-42存在，rank38缺失）
+        function getFightersRankIconUrl(leagueRank, masterLeague) {
+            let n = 0;
+            if (masterLeague >= 39) n = masterLeague;   // 传奇MR细分档(39-42)
+            else if (leagueRank > 0) n = leagueRank;    // 真实段位号(1-37/39)
+            if (!n || n === 38) return '';              // rank38图标官网不存在
+            return `https://www.streetfighter.com/6/buckler/assets/images/material/rank/rank${n}_l.png`;
+        }
                 
         function showRankingPage() {
             // 更新侧边栏激活状态
@@ -698,8 +685,8 @@
                 ? (CHARACTER_ROSTER.find(c => c.tool === rankingState.characterId)?.name || '')
                 : '';
             fixedNavSection.innerHTML = `
-                <div class="nav-panel${navPanelStates.ranking ? ' collapsed' : ''}" data-panel-id="ranking">
-                    <h2 onclick="toggleNavPanel('ranking')">🏆 排行榜</h2>
+                <div class="nav-panel">
+                    <h2>🏆 排行榜</h2>
                     <div class="nav-panel-body">
                         <div id="rankingStatus"></div>
                         <div class="sub-nav ranking-sub-nav">
@@ -1006,7 +993,7 @@
                 rankingState.statsError = '请求失败: ' + error.message;
             } finally {
                 rankingState.statsLoading = false;
-                if (rankingState.view === 'stats') renderRankingPage();
+                if (rankingState.view === 'stats' && lastActiveTab === 'ranking') renderRankingPage();
             }
         }
         
@@ -1123,7 +1110,9 @@
                     rankingState.loading = false;
                     rankingState.data = null;
                     rankingState.rankingList = null;
-                    battlesScrollArea.innerHTML = emptyStateHtml('❌', result.detail || '加载失败，请重试');
+                    if (lastActiveTab === 'ranking') {
+                        battlesScrollArea.innerHTML = emptyStateHtml('❌', result.detail || '加载失败，请重试');
+                    }
                     return;
                 }
                         
@@ -1132,17 +1121,23 @@
                     rankingState.rankingList = result.ranking_list || null;
                     rankingState.pagination = result.pagination || null;
                     rankingState.loading = false;
-                    renderRankingTable(battlesScrollArea);
+                    if (lastActiveTab === 'ranking') {
+                        renderRankingTable(battlesScrollArea);
+                    }
                 } else {
                     rankingState.loading = false;
-                    battlesScrollArea.innerHTML = emptyStateHtml('❌', '加载失败，请重试');
+                    if (lastActiveTab === 'ranking') {
+                        battlesScrollArea.innerHTML = emptyStateHtml('❌', '加载失败，请重试');
+                    }
                 }
             } catch (error) {
                 // 被新请求取消时静默退出，不触碰任何状态
                 if (error.name === 'AbortError' || myId !== rankingFetchId) return;
                 console.error('排行榜请求异常:', error);
                 rankingState.loading = false;
-                battlesScrollArea.innerHTML = emptyStateHtml('❌', '请求失败: ' + error.message);
+                if (lastActiveTab === 'ranking') {
+                    battlesScrollArea.innerHTML = emptyStateHtml('❌', '请求失败: ' + error.message);
+                }
             }
         }
         
@@ -1150,11 +1145,11 @@
         
         // 格斗圈状态
         let fightersState = {
-            listType: 'friend',  // friend=朋友, follow=关注
+            listType: 'friend',  // friend=朋友, follow=关注, block=屏蔽
             orderType: 'gamemode',  // gamemode/league_rank/registered/last_play
             orderOrder: 0,  // 0=降序, 1=升序
-            pages: { friend: 1, follow: 1 },
-            cache: { friend: null, follow: null },  // {fighterList, pagination, data}
+            pages: { friend: 1, follow: 1, block: 1 },
+            cache: { friend: null, follow: null, block: null },  // {fighterList, pagination, data}
             loading: false
         };
         
@@ -1191,16 +1186,21 @@
             const battlesScrollArea = document.getElementById('battlesScrollArea');
             const cache = fightersState.cache[fightersState.listType];
             
-            // 渲染筛选栏（朋友/关注切换 + 排序方式 + 最右侧刷新按钮）
+            // 渲染筛选栏（二级导航：朋友/关注/屏蔽 + 排序方式）
             fixedNavSection.innerHTML = `
-                <div class="nav-panel${navPanelStates.fighters ? ' collapsed' : ''}" data-panel-id="fighters">
-                    <h2 onclick="toggleNavPanel('fighters')">🤼 格斗圈</h2>
+                <div class="nav-panel">
+                    <h2>🤼 格斗圈</h2>
                     <div class="nav-panel-body">
-                        <div class="ranking-filters">
-                            <div class="ranking-region-btns">
-                                <button class="ranking-region-btn ${fightersState.listType === 'friend' ? 'active' : ''}" onclick="changeFightersTab('friend')">朋友</button>
-                                <button class="ranking-region-btn ${fightersState.listType === 'follow' ? 'active' : ''}" onclick="changeFightersTab('follow')">关注</button>
+                        <div id="fightersStatus"></div>
+                        <div class="sub-nav fighters-sub-nav">
+                            <div class="sub-nav-item ${fightersState.listType === 'friend' ? 'active' : ''}" onclick="changeFightersTab('friend')">朋友</div>
+                            <div class="sub-nav-item ${fightersState.listType === 'follow' ? 'active' : ''}" onclick="changeFightersTab('follow')">关注</div>
+                            <div class="sub-nav-item ${fightersState.listType === 'block' ? 'active' : ''}" onclick="changeFightersTab('block')">屏蔽</div>
+                            <div class="ranking-sub-nav-filters">
+                                <button class="fighters-refresh-btn" id="fightersRefreshBtn" onclick="refreshFightersData()" ${fightersState.loading ? 'disabled' : ''}>刷新</button>
                             </div>
+                        </div>
+                        <div class="ranking-filters">
                             <div class="ranking-region-btns fighters-sort-nav">
                                 <button class="ranking-region-btn ${fightersState.orderType === 'gamemode' ? 'active' : ''}" onclick="changeFightersOrderType('gamemode')">游戏模式</button>
                                 <button class="ranking-region-btn ${fightersState.orderType === 'registered' ? 'active' : ''}" onclick="changeFightersOrderType('registered')">添加时间</button>
@@ -1211,9 +1211,7 @@
                                 <button class="ranking-region-btn ${fightersState.orderOrder === 0 ? 'active' : ''}" onclick="changeFightersOrderOrder(0)">降序</button>
                                 <button class="ranking-region-btn ${fightersState.orderOrder === 1 ? 'active' : ''}" onclick="changeFightersOrderOrder(1)">升序</button>
                             </div>
-                            <button class="fighters-refresh-btn" id="fightersRefreshBtn" onclick="refreshFightersData()" ${fightersState.loading ? 'disabled' : ''}>刷新</button>
                         </div>
-                        <div id="fightersStatus"></div>
                     </div>
                 </div>
             `;
@@ -1251,6 +1249,7 @@
             }
             const charName = banner.favorite_character_name || item.character_name
                 || (banner.favorite_character_id ? getCharacterNameById(banner.favorite_character_id) : '');
+            const titleData = banner.title_data || {};
             return {
                 raw: item,
                 name: personalInfo.fighter_id || item.fighter_id || '-',
@@ -1261,9 +1260,12 @@
                 onlineOffline: onlineOffline,
                 charName: charName,
                 charTool: banner.favorite_character_tool_name || item.character_tool_name || '',
+                titleVal: titleData.title_data_val || '',
+                titlePlate: titleData.title_data_plate_name || '',
                 mr: league.master_rating || item.rating || 0,
                 lp: league.league_point || item.league_point || 0,
                 leagueRank: league.league_rank || 0,
+                masterLeague: league.master_league || 0,
                 registeredAt: item.registered_at || 0,
                 lastPlayAt: banner.last_play_at || 0
             };
@@ -1296,7 +1298,7 @@
         function renderFightersList(container) {
             const cache = fightersState.cache[fightersState.listType];
             const rawList = (cache && cache.fighterList) || [];
-            const listLabel = fightersState.listType === 'friend' ? '朋友' : '关注';
+            const listLabel = { friend: '朋友', follow: '关注', block: '屏蔽' }[fightersState.listType] || '朋友';
             
             if (rawList.length === 0) {
                 container.innerHTML = emptyStateHtml('🤼', '暂无' + listLabel + '数据');
@@ -1310,7 +1312,7 @@
             const page = fightersState.pages[fightersState.listType];
             
             const rows = fighterList.map((item) => {
-                const { name, shortId, platform, region, onlineStatus, onlineOffline, charName, charTool, mr, lp } = item;
+                const { name, shortId, platform, region, onlineStatus, onlineOffline, charName, charTool, mr, lp, leagueRank, masterLeague, titleVal, titlePlate } = item;
                 
                 // 角色图片URL
                 const charImgUrl = charTool ? `https://www.streetfighter.com/6/buckler/assets/images/material/character/character_${charTool}_l.png` : '';
@@ -1318,26 +1320,43 @@
                     ? `<img src="${charImgUrl}" alt="${charName}" onerror="this.parentElement.innerHTML='<div class=\\'char-fallback\\'>${charName || '?'}</div>'">`
                     : `<div class="char-fallback">${charName || '?'}</div>`;
                 
+                // 官方称号底板图（与排行榜卡片一致）
+                const emblemImgHtml = titlePlate
+                    ? `<img class="ranking-card-emblem" src="https://www.streetfighter.com/6/buckler/assets/images/material/title/${titlePlate}.png" alt="" onerror="this.style.display='none'">`
+                    : '';
+                // 官方段位图标（API真实段位，无legend回退）
+                const rankIconUrl = getFightersRankIconUrl(leagueRank, masterLeague);
+                // 卡片整体可点击：查询该玩家（与排行榜一致）
+                const cardClickAttrs = shortId
+                    ? ` onclick="queryPlayerById('${shortId}', event)"`
+                    : '';
+                
                 return `
-                    <div class="ranking-card">
-                        <div class="ranking-card-info">
-                            <div class="ranking-card-name-row">
-                                ${platform ? `<span class="ranking-card-platform">${platform}</span>` : ''}
-                                <span class="ranking-player-name" ${shortId ? `onclick="queryPlayerById('${shortId}', event)"` : ''}>${name}</span>
-                                ${onlineStatus ? `<span class="fighters-online-status ${onlineOffline ? 'offline' : ''}">${onlineStatus}</span>` : ''}
+                    <div class="ranking-card fighters-card${titlePlate ? ' has-emblem' : ''}"${cardClickAttrs}>
+                        <div class="ranking-card-visual${titlePlate ? ' has-emblem' : ''}">
+                            ${emblemImgHtml}
+                            <div class="ranking-card-info">
+                                <div class="ranking-card-name-row">
+                                    ${platform ? `<span class="ranking-card-platform">${platform}</span>` : ''}
+                                    <span class="ranking-player-name">${name}</span>
+                                    ${onlineStatus ? `<span class="fighters-online-status ${onlineOffline ? 'offline' : ''}">${onlineStatus}</span>` : ''}
+                                </div>
+                                ${titleVal ? `<div class="ranking-card-meta"><span class="ranking-card-title">${titleVal}</span></div>` : ''}
+                                <div class="ranking-card-meta">
+                                    ${region ? `<span class="ranking-card-region">🌐 ${region}</span>` : ''}
+                                    ${charName ? `<span>${charName}</span>` : ''}
+                                    ${shortId ? `<span class="ranking-player-id" oncontextmenu="return copyToClipboard('${shortId}', event)" title="右键复制ID">${shortId}</span>` : ''}
+                                </div>
                             </div>
-                            <div class="ranking-card-meta">
-                                ${region ? `<span class="ranking-card-region">🌐 ${region}</span>` : ''}
-                                ${charName ? `<span>${charName}</span>` : ''}
-                                ${shortId ? `<span class="ranking-player-id" oncontextmenu="return copyToClipboard('${shortId}', event)" title="右键复制ID">${shortId}</span>` : ''}
-                            </div>
+                            ${(charTool || charName) ? `<div class="ranking-card-char">${charImgHtml}</div>` : ''}
                         </div>
-                        ${(charTool || charName) ? `<div class="ranking-card-char">${charImgHtml}</div>` : ''}
+                        <div class="ranking-card-divider"></div>
                         ${(mr > 0 || lp > 0) ? `
                         <div class="ranking-card-score">
                             <span class="ranking-card-mr">${mr > 0 ? mr : lp}</span>
                             <span class="ranking-card-mr-label">${mr > 0 ? 'MR' : 'LP'}</span>
                         </div>` : ''}
+                        ${rankIconUrl ? `<div class="ranking-card-rankicon"><img src="${rankIconUrl}" alt="段位" onerror="this.style.display='none'"></div>` : ''}
                     </div>
                 `;
             }).join('');
@@ -1448,8 +1467,10 @@
                     // HTTP错误（如403未登录、500服务错误）
                     fightersState.loading = false;
                     fightersState.cache[fightersState.listType] = null;
-                    renderFightersPage();
-                    document.getElementById('battlesScrollArea').innerHTML = emptyStateHtml('❌', result.detail || '加载失败，请重试');
+                    if (lastActiveTab === 'fighters') {
+                        renderFightersPage();
+                        document.getElementById('battlesScrollArea').innerHTML = emptyStateHtml('❌', result.detail || '加载失败，请重试');
+                    }
                     return false;
                 }
                 
@@ -1467,12 +1488,16 @@
                         };
                     }
                     fightersState.loading = false;
-                    renderFightersPage();
+                    if (lastActiveTab === 'fighters') {
+                        renderFightersPage();
+                    }
                     return true;
                 } else {
                     fightersState.loading = false;
-                    renderFightersPage();
-                    document.getElementById('battlesScrollArea').innerHTML = emptyStateHtml('❌', '加载失败，请重试');
+                    if (lastActiveTab === 'fighters') {
+                        renderFightersPage();
+                        document.getElementById('battlesScrollArea').innerHTML = emptyStateHtml('❌', '加载失败，请重试');
+                    }
                     return false;
                 }
             } catch (error) {
@@ -1482,8 +1507,10 @@
                 }
                 console.error('格斗圈请求异常:', error);
                 fightersState.loading = false;
-                renderFightersPage();
-                document.getElementById('battlesScrollArea').innerHTML = emptyStateHtml('❌', '请求失败: ' + error.message);
+                if (lastActiveTab === 'fighters') {
+                    renderFightersPage();
+                    document.getElementById('battlesScrollArea').innerHTML = emptyStateHtml('❌', '请求失败: ' + error.message);
+                }
                 return false;
             }
         }
@@ -1531,7 +1558,10 @@
             battleFetchCtrl = new AbortController();
             const battleSignal = battleFetchCtrl.signal;
             
-            showLocalLoading();
+            // 统一加载显示：内容区spinner；用户已切走页面时后台静默加载不弹回
+            if (isBattlePageActive()) {
+                document.getElementById('battlesScrollArea').innerHTML = loadingHtml('全力加载中...');
+            }
             
             try {
                 let response;
@@ -1583,8 +1613,10 @@
                     homeData.userInfo = currentUserInfo;
                     homeData.profile = playerProfile;
                     
-                    // 重新渲染内容
-                    renderContent();
+                    // 重新渲染内容（用户已切走页面时不弹回）
+                    if (isBattlePageActive()) {
+                        renderContent();
+                    }
                 } else {
                     console.error('刷新失败:', data);
                     // 检查是否是Cookie失效
@@ -1597,10 +1629,6 @@
             } catch (error) {
                 if (error.name === 'AbortError') return;  // 被新加载取消，静默退出
                 console.error('刷新请求异常:', error);
-            } finally {
-                if (!battleSignal.aborted) {
-                    hideLocalLoading();
-                }
             }
         }
         
@@ -2097,8 +2125,8 @@
             
             // 渲染子标签栏 + 当前子标签内容
             fixedNavSection.innerHTML = `
-                <div class="nav-panel${navPanelStates.query ? ' collapsed' : ''}" data-panel-id="query">
-                    <h2 onclick="toggleNavPanel('query')">🔍 查询</h2>
+                <div class="nav-panel">
+                    <h2>🔍 查询</h2>
                     <div class="nav-panel-body">
                         <div class="sub-nav">
                             <div class="sub-nav-item${querySubTab === 'search' ? ' active' : ''}" onclick="switchQuerySubTab('search')">查询</div>
@@ -2325,8 +2353,8 @@
             const battleSignal = battleFetchCtrl.signal;
             
             try {
-                // 显示加载蒙版（覆盖整个内容区域）
-                showLocalLoading();
+                // 统一加载显示：内容区spinner（无遮罩不阻挡操作）
+                document.getElementById('battlesScrollArea').innerHTML = loadingHtml('正在加载对战记录...');
                 
                 const response = await fetch(`${API_BASE}/api/query-player`, {
                     method: 'POST',
@@ -2349,16 +2377,14 @@
                     // 注意：不更新currentUserInfo，保持原有用户信息显示
                     playerProfile = data.player_profile || null;
                     
-                    // 重新渲染内容（包括玩家信息、二级导航栏、战绩列表等）
-                    renderContent();
+                    // 重新渲染内容（包括玩家信息、二级导航栏、战绩列表等；用户已切走页面时不弹回）
+                    if (isBattlePageActive()) {
+                        renderContent();
+                    }
                 }
             } catch (error) {
                 if (error.name === 'AbortError') return;  // 被新加载取消，静默退出
                 console.error('查询请求异常:', error);
-            } finally {
-                if (!battleSignal.aborted) {
-                    hideLocalLoading();
-                }
             }
         }
         
@@ -2589,13 +2615,13 @@
             
             // 渲染筛选栏
             fixedNavSection.innerHTML = `
-                <div class="nav-panel${navPanelStates.favorites ? ' collapsed' : ''}" data-panel-id="favorites">
-                    <h2 onclick="toggleNavPanel('favorites')">📌 收藏对局</h2>
+                <div class="nav-panel">
+                    <h2>📌 收藏对局</h2>
                     <div class="nav-panel-body">
-                        <div class="fav-filter-bar">
-                            <div class="fav-filter-tab ${favBattleFilter === 'all' ? 'active' : ''}" onclick="setFavFilter('all')">全部<span class="fav-count">${totalCount}</span></div>
-                            <div class="fav-filter-tab ${favBattleFilter === 'pending' ? 'active' : ''}" onclick="setFavFilter('pending')">待看<span class="fav-count">${pendingCount}</span></div>
-                            <div class="fav-filter-tab ${favBattleFilter === 'watched' ? 'active' : ''}" onclick="setFavFilter('watched')">已看<span class="fav-count">${watchedCount}</span></div>
+                        <div class="sub-nav">
+                            <div class="sub-nav-item${favBattleFilter === 'all' ? ' active' : ''}" onclick="setFavFilter('all')">全部<span class="fav-count">${totalCount}</span></div>
+                            <div class="sub-nav-item${favBattleFilter === 'pending' ? ' active' : ''}" onclick="setFavFilter('pending')">待看<span class="fav-count">${pendingCount}</span></div>
+                            <div class="sub-nav-item${favBattleFilter === 'watched' ? ' active' : ''}" onclick="setFavFilter('watched')">已看<span class="fav-count">${watchedCount}</span></div>
                         </div>
                     </div>
                 </div>
@@ -3783,7 +3809,7 @@
         }
 
         async function startLogin() {
-            showLoading();
+            showLoading('正在启动登录流程...');
             try {
                 const response = await fetch(`${API_BASE}/api/login/start`, {
                     method: 'POST',
@@ -3914,7 +3940,10 @@
             battleFetchCtrl = new AbortController();
             const battleSignal = battleFetchCtrl.signal;
             
-            showLocalLoading();
+            // 统一加载显示：内容区spinner（无遮罩不阻挡操作）
+            if (isBattlePageActive()) {
+                document.getElementById('battlesScrollArea').innerHTML = loadingHtml('全力加载中...');
+            }
             try {
                 const response = await fetch(`${API_BASE}/api/crawl`, {
                     method: 'POST',
@@ -3951,20 +3980,22 @@
                     homeData.userInfo = currentUserInfo;
                     homeData.profile = playerProfile;
                     
-                    renderContent();
+                    if (isBattlePageActive()) {
+                        renderContent();
+                    }
                 } else {
                     // 静默处理，不弹窗
                     console.warn('爬取返回失败:', data);
-                    renderContent();
+                    if (isBattlePageActive()) {
+                        renderContent();
+                    }
                 }
             } catch (error) {
                 if (error.name === 'AbortError') return;  // 被新加载取消，静默退出
                 // 静默处理，不弹窗
                 console.error('请求失败:', error);
-                renderContent();
-            } finally {
-                if (!battleSignal.aborted) {
-                    hideLocalLoading();
+                if (isBattlePageActive()) {
+                    renderContent();
                 }
             }
         }
@@ -3978,7 +4009,7 @@
             const pages = parseInt(document.getElementById('pages').value);
             const maxWorkers = parseInt(document.getElementById('maxWorkers').value);
 
-            showLoading();
+            showLoading('正在爬取数据...');
             try {
                 const response = await fetch(`${API_BASE}/api/crawl`, {
                     method: 'POST',
@@ -4026,11 +4057,13 @@
             
             const refreshBtn = document.getElementById('refreshBtn');
             if (refreshBtn) {
-                refreshBtn.disabled = true;
-                refreshBtn.innerHTML = '<span>刷新中...</span>';
+                refreshBtn.disabled = true;  // 加载态仅置灰，与其他刷新按钮一致
             }
             
-            showLocalLoading();
+            // 统一加载显示：内容区spinner（无遮罩不阻挡操作）
+            if (isBattlePageActive()) {
+                document.getElementById('battlesScrollArea').innerHTML = loadingHtml('正在刷新对战记录...');
+            }
             try {
                 let response;
                 
@@ -4085,7 +4118,9 @@
                         homeData.profile = playerProfile;
                     }
                     
-                    renderMatchCards();
+                    if (isBattlePageActive()) {
+                        renderMatchCards();
+                    }
                 } else {
                     console.error('刷新失败:', data);
                     alert('刷新失败：' + (data.detail || '未知错误'));
@@ -4096,10 +4131,8 @@
                 alert('请求失败: ' + error.message);
             } finally {
                 if (!battleSignal.aborted) {
-                    hideLocalLoading();
                     if (refreshBtn) {
                         refreshBtn.disabled = false;
-                        refreshBtn.innerHTML = '<span>刷 新</span>';
                     }
                 }
             }

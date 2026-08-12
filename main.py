@@ -80,8 +80,8 @@ class RankingStatsRequest(BaseModel):
 
 
 class FightersListRequest(BaseModel):
-    """格斗圈（朋友/关注）列表请求"""
-    list_type: str = 'friend'  # 列表类型: friend=朋友, follow=关注
+    """格斗圈（朋友/关注/屏蔽）列表请求"""
+    list_type: str = 'friend'  # 列表类型: friend=朋友, follow=关注, block=屏蔽
     page: int = 1  # 页码
     order_type: str = 'gamemode'  # 排序类型: gamemode/league_rank/registered/last_play
     order_order: int = 0  # 排序方向: 0/1
@@ -236,59 +236,44 @@ def confirm_login(request: dict):
 
 @app.post("/api/login/cookie")
 def login_with_cookie(request: dict):
-    """通过Cookie直接登录 - 用采集验证有效性（能采到名字ID就是有效的）"""
+    """通过Cookie直接登录 - 用固定测试玩家验证有效性，从响应中提取登录用户信息"""
     global stored_cookie, user_info
     cookie_string = request.get('cookie', '').strip()
     
     if not cookie_string:
         raise HTTPException(status_code=400, detail="Cookie不能为空")
     
+    # 固定测试玩家ID，用于验证cookie是否能正常访问API
+    TEST_PLAYER_ID = '4123104110'
+    
     try:
-        extracted_user_id = None
-        extracted_player_name = None
+        test_crawler = SF6BattleLogCrawler(cookie=cookie_string)
+        test_crawler.user_id = TEST_PLAYER_ID
         
-        # 用前端传来的user_id或已存储的user_info，直接采集验证
-        test_user_id = request.get('user_id') or user_info.get('user_id')
+        # 查询测试玩家的基本信息
+        url = f'{test_crawler.api_base_url}/{test_crawler.build_id}/{test_crawler.lang}/profile/{TEST_PLAYER_ID}.json?sid={TEST_PLAYER_ID}'
+        response = test_crawler.session.get(url, timeout=10)
         
-        if test_user_id:
-            # 已知用户ID：直接采集对战数据验证（能采到就是有效的）
-            try:
-                test_crawler = SF6BattleLogCrawler(cookie=cookie_string)
-                test_crawler.set_user_id(test_user_id)
-                page_data = test_crawler.fetch_page(page=1)
-                battles, battle_user_info = test_crawler.parse_battles_from_json(page_data)
-                extracted_user_id = battle_user_info.get('user_id') or str(test_user_id)
-                extracted_player_name = battle_user_info.get('player_name') or user_info.get('player_name', '')
-                print(f'✓ 采集验证通过: {extracted_player_name}({extracted_user_id})')
-            except Exception as e:
-                raise HTTPException(status_code=401, detail=f"Cookie已失效（{e}），请重新获取")
-        else:
-            # 首次Cookie登录（无用户ID）：请求排行榜接口验证登录态，并从loginUser提取本人信息
-            try:
-                test_crawler = SF6BattleLogCrawler(cookie=cookie_string)
-                ranking_url = (
-                    f'{test_crawler.api_base_url}/{test_crawler.build_id}/{test_crawler.lang}/ranking/master.json'
-                    f'?character_filter=4&character_id=chunli&platform=1&home_filter=1'
-                    f'&home_category_id=0&home_id=0&page=1&season_type=1'
-                )
-                response = test_crawler.session.get(ranking_url, timeout=10)
-                if response.status_code == 403:
-                    raise HTTPException(status_code=401, detail="Cookie无效或已过期（未检测到登录状态），请重新获取")
-                # 不检查状态码：即使参数异常返回400，响应中仍携带loginUser可用于验证
-                common = response.json().get('pageProps', {}).get('common', {})
-                login_user = common.get('loginUser') or {}
-                if not login_user.get('flg') or not login_user.get('shortId'):
-                    raise HTTPException(status_code=401, detail="Cookie无效或已过期（未检测到登录状态），请重新获取")
-                extracted_user_id = str(login_user.get('shortId'))
-                extracted_player_name = login_user.get('fighterId') or ''
-                print(f'✓ 排行榜验证通过: {extracted_player_name}({extracted_user_id})')
-            except HTTPException:
-                raise
-            except Exception as e:
-                raise HTTPException(status_code=401, detail=f"Cookie已失效（{e}），请重新获取")
+        if response.status_code == 403:
+            raise HTTPException(status_code=401, detail="Cookie无效或已过期（未检测到登录状态），请重新获取")
         
-        if not extracted_user_id:
-            raise HTTPException(status_code=401, detail="Cookie无效或已过期，无法采集数据")
+        if response.status_code != 200:
+            raise HTTPException(status_code=401, detail=f"Cookie验证失败，状态码: {response.status_code}")
+        
+        data = response.json()
+        page_props = data.get('pageProps', {})
+        
+        # 从common.loginUser中提取登录用户信息
+        common = page_props.get('common', {})
+        login_user = common.get('loginUser') or {}
+        
+        if not login_user.get('flg') or not login_user.get('shortId'):
+            raise HTTPException(status_code=401, detail="Cookie无效或已过期（未检测到登录状态），请重新获取")
+        
+        extracted_user_id = str(login_user.get('shortId'))
+        extracted_player_name = login_user.get('fighterId') or ''
+        
+        print(f'✓ Cookie验证通过: {extracted_player_name}({extracted_user_id})')
         
         # 保存到全局变量
         stored_cookie = cookie_string
@@ -308,7 +293,7 @@ def login_with_cookie(request: dict):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Cookie登录失败: {str(e)}")
+        raise HTTPException(status_code=401, detail=f"Cookie已失效（{e}），请重新获取")
 
 
 @app.post("/api/get-cookie")
@@ -718,15 +703,15 @@ def get_ranking_stats(request: RankingStatsRequest):
 
 @app.post("/api/fighters-list")
 def get_fighters_list(request: FightersListRequest):
-    """获取格斗圈列表数据（朋友/关注）"""
+    """获取格斗圈列表数据（朋友/关注/屏蔽）"""
     global query_crawler
 
     try:
         start_time = time.time()
 
         # 校验列表类型
-        if request.list_type not in ('friend', 'follow'):
-            raise HTTPException(status_code=400, detail="list_type 仅支持 friend/follow")
+        if request.list_type not in ('friend', 'follow', 'block'):
+            raise HTTPException(status_code=400, detail="list_type 仅支持 friend/follow/block")
 
         # 校验排序参数
         valid_order_types = ('gamemode', 'league_rank', 'registered', 'last_play')
@@ -758,6 +743,7 @@ def get_fighters_list(request: FightersListRequest):
         # 构造格斗圈列表API URL（与官网一致：第1页仅order_type/order_order，翻页才带page）
         # 朋友: {api_base_url}/{build_id}/{lang}/fighterslist/friend.json
         # 关注: {api_base_url}/{build_id}/{lang}/fighterslist/follow.json
+        # 屏蔽: {api_base_url}/{build_id}/{lang}/fighterslist/block.json
         page_param = f'&page={request.page}' if request.page > 1 else ''
         url = (
             f'{query_crawler.api_base_url}/{query_crawler.build_id}/{query_crawler.lang}/fighterslist/{request.list_type}.json'
@@ -800,14 +786,15 @@ def get_fighters_list(request: FightersListRequest):
         if response.status_code != 200:
             raise HTTPException(status_code=response.status_code, detail=f"格斗圈API返回异常状态: {response.status_code}")
 
-        # 提取列表数据（真实字段：朋友=friend_list，关注=followed_fighter_banner_list，均直接位于pageProps顶层）
+        # 提取列表数据（真实字段：朋友=friend_list，关注=followed_fighter_banner_list，屏蔽=block_list，均直接位于pageProps顶层）
         fighter_list = []
         pagination = {"current_page": page_props.get('page', request.page)}
 
         list_keys = (
             'followed_fighter_banner_list',  # 关注列表真实字段
             'friend_list',                   # 朋友列表真实字段
-            'fighter_list', 'follow_list', 'list'
+            'block_list',                    # 屏蔽列表真实字段
+            'fighter_list', 'follow_list', 'block_list', 'list'
         )
         for key in list_keys:
             if isinstance(page_props.get(key), list):
