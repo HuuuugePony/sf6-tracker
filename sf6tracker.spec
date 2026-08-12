@@ -7,7 +7,9 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[
-        ('index.html', '.'),
+        ('web/index.html', 'web'),
+        ('web/styles.css', 'web'),
+        ('web/app.js', 'web'),
         ('desktop_styles.css', '.'),
     ],
     hiddenimports=[

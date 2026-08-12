@@ -30,6 +30,8 @@ app = FastAPI(
 
 # 挂载静态文件目录（使用资源路径）
 app.mount("/static", StaticFiles(directory=RESOURCE_PATH), name="static")
+# 挂载 web 前端资源目录（styles.css / app.js 等）
+app.mount("/web", StaticFiles(directory=os.path.join(RESOURCE_PATH, 'web')), name="web")
 
 # 全局变量存储Cookie和用户信息
 stored_cookie = None
@@ -104,7 +106,7 @@ def home_redirect():
 @app.get("/home", response_class=HTMLResponse)
 def home():
     """主页 - 登录和用户信息展示"""
-    resp = FileResponse(os.path.join(RESOURCE_PATH, 'index.html'))
+    resp = FileResponse(os.path.join(RESOURCE_PATH, 'web', 'index.html'))
     resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
     resp.headers['Pragma'] = 'no-cache'
     resp.headers['Expires'] = '0'
@@ -114,7 +116,7 @@ def home():
 @app.get("/search", response_class=HTMLResponse)
 def search_page(uid: str = None):
     """查询页面 - 支持uid参数"""
-    resp = FileResponse(os.path.join(RESOURCE_PATH, 'index.html'))
+    resp = FileResponse(os.path.join(RESOURCE_PATH, 'web', 'index.html'))
     resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
     resp.headers['Pragma'] = 'no-cache'
     resp.headers['Expires'] = '0'

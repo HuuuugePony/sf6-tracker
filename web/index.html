@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SF6-TRACKER</title>
+    <link rel="stylesheet" href="/web/styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-title-wrap">
+                <h1>SF6-TRACKER</h1>
+                <div class="header-quote">强者不靠馈赠，全凭实力自证</div>
+            </div>
+            <div class="user-status">
+                <span class="status-indicator" id="statusIndicator"></span>
+                <span id="statusText">未登录</span>
+                <div class="user-info" id="userInfo" style="display:none;">
+                    <span class="player-name" id="playerName" oncontextmenu="return copyToClipboard(currentUserInfo.player_name || '', event)"></span>
+                    <span class="user-id" id="userId" oncontextmenu="return copyToClipboard(currentUserInfo.user_id || '', event)"></span>
+                    <button class="login-btn-small" onclick="logout()" style="margin-left: 8px; background: #e74c3c; font-size: 11px; padding: 2px 8px;">退出</button>
+                </div>
+                <button class="login-btn-small" id="headerLoginBtn" onclick="showLoginModal()">登录</button>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <!-- 侧边栏 -->
+            <div class="sidebar">
+                <div class="sidebar-tab active" onclick="switchTab('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>主页</div>
+                <div class="sidebar-tab" onclick="switchTab('query')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>查询</div>
+                <div class="sidebar-tab" onclick="switchTab('ranking')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>排行榜</div>
+                <div class="sidebar-tab" onclick="switchTab('fighters')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>格斗圈</div>
+                <div class="sidebar-tab" onclick="switchTab('favorites')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>收藏</div>
+                <div class="sidebar-tab" onclick="switchTab('settings')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>设置</div>
+            </div>
+            
+            <!-- 主内容区 -->
+            <div class="content-area" id="contentArea">
+                <!-- 局部加载遮罩（覆盖整个内容区域，包括固定导航栏和战绩列表） -->
+                <div class="local-loading-overlay" id="localLoadingOverlay">
+                    <div class="local-loading-card">
+                        <div class="spinner"></div>
+                        <div class="loading-text" id="loadingText">全力加载中！</div>
+                    </div>
+                </div>
+                
+                <div class="scrollable-content" id="scrollableContent">
+                    <!-- 固定区域：玩家信息和导航栏 -->
+                    <div class="fixed-nav-section" id="fixedNavSection">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🔒</div>
+                            <div class="empty-state-text">请先登录后查看战绩</div>
+                        </div>
+                    </div>
+                    <!-- 可滚动区域：战绩列表 -->
+                    <div class="battles-scroll-area" id="battlesScrollArea">
+                    </div>
+                </div>
+                
+                <!-- 设置面板（默认隐藏） -->
+                <div id="settingsPanel" style="display:none;flex:1;overflow-y:auto;">
+                    <div class="settings-panel">
+                        <h2>⚙ 设置</h2>
+                        
+                        <div class="settings-group">
+                            <div class="settings-group-title">外观</div>
+                            <div class="settings-item">
+                                <div>
+                                    <div class="settings-item-label">主题模式</div>
+                                    <div class="settings-item-desc">选择亮色或暗色主题</div>
+                                </div>
+                                <div class="settings-item-action">
+                                    <div class="theme-switch">
+                                        <button class="theme-switch-btn active" id="themeDarkBtn" onclick="setTheme('dark')">🌙 暗色</button>
+                                        <button class="theme-switch-btn" id="themeLightBtn" onclick="setTheme('light')">☀️ 亮色</button>
+                                        <button class="theme-switch-btn theme-switch-btn-sf6" id="themeSf6Btn" onclick="setTheme('sf6')">🎀 春丽</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="settings-item">
+                                <div>
+                                    <div class="settings-item-label">布局密度</div>
+                                    <div class="settings-item-desc">选择宽松或紧凑的界面布局</div>
+                                </div>
+                                <div class="settings-item-action">
+                                    <div class="layout-switch">
+                                        <button class="layout-switch-btn" id="layoutSpaciousBtn" onclick="setLayout('spacious')">宽松</button>
+                                        <button class="layout-switch-btn active" id="layoutCompactBtn" onclick="setLayout('compact')">紧凑</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="settings-group">
+                            <div class="settings-group-title">数据</div>
+                            <div class="settings-item">
+                                <div>
+                                    <div class="settings-item-label">清空缓存</div>
+                                    <div class="settings-item-desc">清除本地缓存数据（登录状态、搜索历史等）</div>
+                                </div>
+                                <div class="settings-item-action">
+                                    <button class="btn-clear-cache" onclick="clearCache()">清空</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="settings-group">
+                            <div class="settings-group-title">关于</div>
+                            <div class="settings-item">
+                                <div>
+                                    <div class="settings-item-label">版本</div>
+                                </div>
+                                <div class="settings-item-action">
+                                    <span class="version-badge">v0.4</span>
+                                </div>
+                            </div>
+                            <div class="settings-item">
+                                <div>
+                                    <div class="settings-item-label">源代码</div>
+                                    <div class="settings-item-desc">在 GitHub 上查看本项目</div>
+                                </div>
+                                <div class="settings-item-action">
+                                    <a class="github-link" href="https://github.com/HuuuugePony/sf6-tracker" target="_blank" rel="noopener noreferrer">
+                                        <svg class="github-icon" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                                            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+                                        </svg>
+                                        GitHub
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 加载遮罩（作为main-content的子元素，覆盖content-area） -->
+            <div class="loading-overlay" id="loadingOverlay">
+                <div class="spinner"></div>
+                <div class="loading-text">正在获取对战记录...</div>
+            </div>
+        </div>
+        
+        <!-- 登录弹窗 -->
+        <div class="login-modal" id="loginModal">
+            <div class="login-modal-content">
+                <div class="login-modal-header">
+                    <h3>用户登录</h3>
+                    <button class="close-btn" onclick="hideLoginModal()">&times;</button>
+                </div>
+                <p style="font-size: 13px; margin-bottom: 15px; color: #666;">点击下方按钮打开浏览器，手动完成登录后系统将自动获取您的用户信息</p>
+                <button onclick="startLogin()" id="loginBtn" style="background: #27ae60;">打开浏览器登录</button>
+                <div id="loginStatus"></div>
+                
+                <div id="confirmSection" style="display:none; margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.06);">
+                    <p style="font-size: 13px; margin: 8px 0; color: #ccc;">请在打开的浏览器中完成登录，然后点击下方按钮</p>
+                    <button onclick="confirmLogin()" id="confirmBtn">获取用户信息</button>
+                    <div id="confirmStatus"></div>
+                </div>
+                
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.06);">
+                    <p style="font-size: 13px; margin: 8px 0; color: #666;">或者直接粘贴Cookie登录（F12 → Console → document.cookie）</p>
+                    <textarea id="cookieInput" placeholder="粘贴Cookie字符串..." style="width: 100%; height: 60px; resize: vertical; background: rgba(0,0,0,0.3); color: #eee; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 8px; font-size: 12px; font-family: monospace;"></textarea>
+                    <button onclick="cookieLogin()" id="cookieLoginBtn" style="margin-top: 8px; background: #2980b9;">Cookie登录</button>
+                    <div id="cookieLoginStatus"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 角色选择弹窗（通用模板：我的角色/对手角色/角色对阵/排行榜） -->
+        <div class="char-picker-overlay" id="characterPickerModal" onclick="if(event.target===this) closeCharacterPicker()">
+            <div class="char-picker-panel">
+                <div class="char-picker-header">
+                    <span class="char-picker-title" id="charPickerTitle">选择角色</span>
+                    <button class="char-picker-close" onclick="closeCharacterPicker()">&times;</button>
+                </div>
+                <div class="char-picker-grid" id="charPickerGrid"></div>
+            </div>
+        </div>
+
+        <!-- 对战报告全量列表弹窗（角色使用排行/对手角色） -->
+        <div class="report-list-overlay" id="reportListModal" onclick="if(event.target===this) closeReportListModal()">
+            <div class="report-list-modal">
+                <div class="report-list-header">
+                    <span id="reportListTitle">全部</span>
+                    <button class="report-list-close" onclick="closeReportListModal()">&times;</button>
+                </div>
+                <div class="report-list-body" id="reportListBody"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/web/app.js"></script>
+</body>
+</html>
