@@ -1,4 +1,4 @@
-﻿        // 检测是否为桌面应用环境（pywebview）
+        // 检测是否为桌面应用环境（pywebview）
         const isDesktopApp = window.pywebview !== undefined;
         
         // 如果是浏览器访问，立即显示 body
@@ -49,6 +49,7 @@
         let favoritePlayers = [];  // 收藏的玩家列表
         let favoriteBattles = [];  // 收藏的对局列表
         let favBattleFilter = 'all';  // 收藏对局筛选: all/pending/watched
+        let querySubTab = 'search';  // 查询页子标签: 'search' | 'footprint'
         
         // 导航面板收缩状态（各面板独立收缩，持久化到 localStorage）
         let navPanelStates = { ranking: false, fighters: false, query: false, favorites: false };
@@ -2090,82 +2091,195 @@
             // 清空可滚动区域
             battlesScrollArea.innerHTML = '';
             
-            // 注意：不要重置 isQueryMode 和 queriedUserId，因为此函数也可能在查询结果页面被调用
-            // 只在 showSearchInput 中重置这些变量
-            
             // 从 localStorage 加载数据
             loadSearchHistory();
             loadFavoritePlayers();
             
-            // 渲染查询表单
+            // 渲染子标签栏 + 当前子标签内容
             fixedNavSection.innerHTML = `
                 <div class="nav-panel${navPanelStates.query ? ' collapsed' : ''}" data-panel-id="query">
-                    <h2 onclick="toggleNavPanel('query')">🔍 查询玩家</h2>
+                    <h2 onclick="toggleNavPanel('query')">🔍 查询</h2>
                     <div class="nav-panel-body">
-                    
-                    <!-- 搜索框和按钮 -->
-                    <div class="search-bar">
-                        <input type="text" id="queryUserId" placeholder="请输入玩家ID" onkeypress="if(event.key==='Enter') queryPlayerData()">
-                        <button onclick="queryPlayerData()" id="queryBtn" class="search-btn">搜索</button>
-                    </div>
-                    
-                    <div id="queryStatus"></div>
-                    
-                    <!-- 收藏列表 -->
-                    <div class="favorites-section">
-                        <div class="section-header">
-                            <h5>⭐ 收藏列表 (${favoritePlayers.length})</h5>
+                        <div class="sub-nav">
+                            <div class="sub-nav-item${querySubTab === 'search' ? ' active' : ''}" onclick="switchQuerySubTab('search')">查询</div>
+                            <div class="sub-nav-item${querySubTab === 'footprint' ? ' active' : ''}" onclick="switchQuerySubTab('footprint')">足迹</div>
                         </div>
-                        ${favoritePlayers.length === 0 ? 
-                            '<div class="empty-hint">暂无收藏玩家</div>' :
-                            `<div class="favorites-list">
-                                ${favoritePlayers.map((player, index) => `
-                                    <div class="favorite-item" data-index="${index}">
-                                        <div class="favorite-info">
-                                            <div class="favorite-name-row">
-                                                <span class="favorite-name" id="fav-name-${index}" ondblclick="startEditRemark(${index}, event)">${player.remark || player.playerName || '未知玩家'}</span>
-                                                <button class="btn-edit-remark" onclick="startEditRemark(${index}, event)" title="编辑备注">✏️</button>
-                                            </div>
-                                            <div class="favorite-id">ID: ${player.userId}</div>
-                                            ${player.playerName && player.remark ? `<div class="favorite-player-name">${player.playerName}</div>` : ''}
-                                        </div>
-                                        <div class="favorite-actions">
-                                            <button class="btn-favorite-query" onclick="queryPlayerFromFavorite('${player.userId}')" title="查询">🔍</button>
-                                            <button class="btn-remove-fav" onclick="removeFavorite(${index})" title="取消收藏">❌</button>
-                                        </div>
-                                    </div>
-                                `).join('')}
-                            </div>`
-                        }
-                    </div>
-                    
-                    <!-- 历史搜索记录 -->
-                    <div class="history-section">
-                        <div class="section-header">
-                            <h5>🕒 历史搜索 (${searchHistory.length})</h5>
-                            ${searchHistory.length > 0 ? `<button class="btn-clear-history" onclick="clearSearchHistory()">清空历史</button>` : ''}
-                        </div>
-                        ${searchHistory.length === 0 ? 
-                            '<div class="empty-hint">暂无搜索记录</div>' :
-                            `<div class="history-list">
-                                ${searchHistory.map((item, index) => `
-                                    <div class="history-item">
-                                        <div class="history-info">
-                                            <div class="history-id">ID: ${item.userId}</div>
-                                            <div class="history-time">${formatTime(item.timestamp)}</div>
-                                        </div>
-                                        <div class="history-actions">
-                                            <button class="btn-query-from-history" onclick="queryPlayerFromHistory('${item.userId}')" title="查询">🔍</button>
-                                            <button class="btn-fav-from-history" onclick="event.stopPropagation(); addToFavorites('${item.userId}')" title="加入收藏">⭐</button>
-                                        </div>
-                                    </div>
-                                `).join('')}
-                            </div>`
-                        }
-                    </div>
+                        <div id="querySubPanel"></div>
                     </div>
                 </div>
             `;
+            
+            // 渲染当前子标签内容
+            renderQuerySubPanel();
+        }
+        
+        // 切换查询页子标签
+        function switchQuerySubTab(tab) {
+            querySubTab = tab;
+            // 更新标签激活态
+            document.querySelectorAll('.sub-nav-item').forEach(el => {
+                el.classList.toggle('active', el.textContent.includes(tab === 'search' ? '查询' : '足迹'));
+            });
+            renderQuerySubPanel();
+        }
+        
+        // 渲染当前子标签面板内容
+        function renderQuerySubPanel() {
+            const panel = document.getElementById('querySubPanel');
+            if (!panel) return;
+            if (querySubTab === 'search') {
+                renderQuerySearchPanel(panel);
+            } else {
+                renderQueryFootprintPanel(panel);
+            }
+        }
+        
+        // 渲染“查询”子标签
+        function renderQuerySearchPanel(panel) {
+            panel.innerHTML = `
+                <div class="query-search-section">
+                    <!-- 按ID搜索 -->
+                    <div class="search-bar">
+                        <input type="text" id="queryUserId" placeholder="输入玩家ID" onkeypress="if(event.key==='Enter') queryPlayerData()">
+                        <button onclick="queryPlayerData()" id="queryBtn" class="search-btn">搜索</button>
+                    </div>
+                    
+                    <!-- 按名字搜索 -->
+                    <div class="search-bar">
+                        <input type="text" id="queryFighterName" placeholder="输入玩家名字" onkeypress="if(event.key==='Enter') searchFighterByName()">
+                        <button onclick="searchFighterByName()" id="nameSearchBtn" class="search-btn">搜索</button>
+                    </div>
+                    <div id="nameSearchStatus"></div>
+                    <div id="nameSearchResults" class="name-search-results"></div>
+                    
+                    <div id="queryStatus"></div>
+                </div>
+            `;
+        }
+        
+        // 渲染“足迹”子标签
+        function renderQueryFootprintPanel(panel) {
+            panel.innerHTML = `
+                <!-- 收藏列表 -->
+                <div class="favorites-section">
+                    <h5>⭐ 收藏列表 (${favoritePlayers.length})</h5>
+                    ${favoritePlayers.length === 0 ? 
+                        '<div class="empty-hint">暂无收藏玩家</div>' :
+                        `<div class="favorites-list">
+                            ${favoritePlayers.map((player, index) => `
+                                <div class="favorite-item" data-index="${index}">
+                                    <div class="favorite-info">
+                                        <div class="favorite-name-row">
+                                            <span class="favorite-name" id="fav-name-${index}" ondblclick="startEditRemark(${index}, event)">${player.remark || player.playerName || '未知玩家'}</span>
+                                            <button class="btn-edit-remark" onclick="startEditRemark(${index}, event)" title="编辑备注">✏️</button>
+                                        </div>
+                                        <div class="favorite-id">ID: ${player.userId}</div>
+                                        ${player.playerName && player.remark ? `<div class="favorite-player-name">${player.playerName}</div>` : ''}
+                                    </div>
+                                    <div class="favorite-actions">
+                                        <button class="btn-favorite-query" onclick="queryPlayerFromFavorite('${player.userId}')" title="查询">🔍</button>
+                                        <button class="btn-remove-fav" onclick="removeFavorite(${index})" title="取消收藏">❌</button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>`
+                    }
+                </div>
+                
+                <!-- 历史搜索记录 -->
+                <div class="history-section">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                        <h5 style="margin:0;">🕒 历史搜索 (${searchHistory.length})</h5>
+                        ${searchHistory.length > 0 ? `<button class="btn-clear-history" onclick="clearSearchHistory()">清空历史</button>` : ''}
+                    </div>
+                    ${searchHistory.length === 0 ? 
+                        '<div class="empty-hint">暂无搜索记录</div>' :
+                        `<div class="history-list">
+                            ${searchHistory.map((item, index) => `
+                                <div class="history-item">
+                                    <div class="history-info">
+                                        <div class="history-id">ID: ${item.userId}</div>
+                                        <div class="history-time">${formatTime(item.timestamp)}</div>
+                                    </div>
+                                    <div class="history-actions">
+                                        <button class="btn-query-from-history" onclick="queryPlayerFromHistory('${item.userId}')" title="查询">🔍</button>
+                                        <button class="btn-fav-from-history" onclick="event.stopPropagation(); addToFavorites('${item.userId}')" title="加入收藏">⭐</button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>`
+                    }
+                </div>
+            `;
+        }
+        
+        // 按名字搜索玩家
+        async function searchFighterByName() {
+            const nameInput = document.getElementById('queryFighterName');
+            const resultsDiv = document.getElementById('nameSearchResults');
+            const statusDiv = document.getElementById('nameSearchStatus');
+            const btn = document.getElementById('nameSearchBtn');
+            
+            const name = nameInput.value.trim();
+            if (!name) {
+                showStatus('nameSearchStatus', '❌ 请输入玩家名字', 'error');
+                return;
+            }
+            
+            if (!cookie) {
+                showStatus('nameSearchStatus', '❌ 请先登录获取Cookie', 'error');
+                return;
+            }
+            
+            try {
+                btn.disabled = true;
+                resultsDiv.innerHTML = '';
+                showStatus('nameSearchStatus', '🔍 搜索中...', 'info');
+                
+                const response = await fetch(`${API_BASE}/api/search-fighter`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        fighter_id: name,
+                        page: 1,
+                        cookie: cookie
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.fighter_list && data.fighter_list.length > 0) {
+                    statusDiv.innerHTML = '';
+                    resultsDiv.innerHTML = data.fighter_list.map(fighter => {
+                        const shortId = fighter.short_id || fighter.player?.short_id || fighter.user_id || '';
+                        const fighterName = fighter.fighter_id || fighter.player?.fighter_id || fighter.name || '';
+                        const lp = fighter.league_point || fighter.lp || 0;
+                        const rank = fighter.league_rank_display || fighter.league_rank || '-';
+                        const character = fighter.character_id || fighter.character_name || '';
+                        
+                        return `
+                            <div class="search-result-item" onclick="queryPlayerById('${shortId}')">
+                                <div class="search-result-name">${fighterName || '未知'}</div>
+                                <div class="search-result-id">ID: ${shortId}</div>
+                                <div class="search-result-stats">
+                                    ${lp ? `<span class="detail-item">LP: ${lp}</span>` : ''}
+                                    ${rank ? `<span class="detail-item">${rank}</span>` : ''}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                } else if (data.success) {
+                    statusDiv.innerHTML = '';
+                    resultsDiv.innerHTML = '<div class="empty-hint">未找到匹配的玩家</div>';
+                } else {
+                    showStatus('nameSearchStatus', '❌ 搜索失败', 'error');
+                }
+            } catch (error) {
+                console.error('名字搜索异常:', error);
+                showStatus('nameSearchStatus', '❌ 搜索失败: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
+            }
         }
         
         // 查询玩家数据

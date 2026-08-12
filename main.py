@@ -94,6 +94,13 @@ class CharactersRequest(BaseModel):
     force_refresh: bool = False  # 是否忽略缓存强制刷新
 
 
+class SearchFighterRequest(BaseModel):
+    """按名字搜索玩家请求（官方 fighterslist/search API）"""
+    fighter_id: str  # 玩家名字（官方API的fighter_id参数实际是名字）
+    page: int = 1
+    cookie: str = None
+
+
 # ==================== API 接口 ====================
 
 @app.get("/", response_class=HTMLResponse)
@@ -822,6 +829,100 @@ def get_fighters_list(request: FightersListRequest):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取格斗圈列表失败: {str(e)}")
+
+
+@app.post("/api/search-fighter")
+def search_fighter_by_name(request: SearchFighterRequest):
+    """按名字搜索玩家（代理官方 fighterslist/search/result.json API）"""
+    global query_crawler
+
+    try:
+        start_time = time.time()
+
+        if not request.fighter_id or not request.fighter_id.strip():
+            raise HTTPException(status_code=400, detail="请输入玩家名字")
+
+        # cookie处理
+        cookie_to_use = None
+        if request.cookie:
+            cookie_to_use = request.cookie
+        elif stored_cookie:
+            cookie_to_use = stored_cookie
+
+        if not cookie_to_use:
+            raise HTTPException(status_code=403, detail="搜索玩家需要登录后才能使用，请先登录")
+
+        # 复用爬虫实例
+        if query_crawler is None or query_crawler.headers.get('cookie') != cookie_to_use:
+            query_crawler = SF6BattleLogCrawler(cookie=cookie_to_use)
+        try:
+            fresh_build_id = query_crawler.fetch_build_id()
+            if fresh_build_id:
+                query_crawler.build_id = fresh_build_id
+        except Exception:
+            pass
+
+        # 构造搜索API URL
+        url = (
+            f'{query_crawler.api_base_url}/{query_crawler.build_id}/{query_crawler.lang}'
+            f'/fighterslist/search/result.json'
+            f'?fighter_id={request.fighter_id.strip()}&page={request.page}'
+        )
+
+        response = query_crawler.session.get(url, timeout=10)
+
+        # build_id过期时404：重新获取后重试
+        if response.status_code == 404:
+            print('[名字搜索] 404，build_id可能过期，重新获取后重试')
+            query_crawler.build_id = query_crawler.fetch_build_id()
+            url = (
+                f'{query_crawler.api_base_url}/{query_crawler.build_id}/{query_crawler.lang}'
+                f'/fighterslist/search/result.json'
+                f'?fighter_id={request.fighter_id.strip()}&page={request.page}'
+            )
+            response = query_crawler.session.get(url, timeout=10)
+
+        try:
+            data = response.json()
+        except Exception:
+            if response.status_code == 403:
+                raise HTTPException(status_code=403, detail="搜索需要登录后才能使用，请先登录")
+            response.raise_for_status()
+            return {"success": False, "fighter_list": []}
+
+        page_props = data.get('pageProps', {})
+        common = page_props.get('common', {})
+        if response.status_code == 403 or common.get('statusCode') == 403:
+            raise HTTPException(status_code=403, detail="搜索需要登录后才能使用，请先登录")
+
+        # 提取搜索结果列表
+        fighter_list = []
+        search_keys = ('search_result_list', 'fighter_list', 'result_list', 'list')
+        for key in search_keys:
+            if isinstance(page_props.get(key), list):
+                fighter_list = page_props[key]
+                break
+
+        # 分页信息
+        pagination = {
+            "current_page": page_props.get('page', request.page),
+            "total_page": page_props.get('total_page', 1),
+        }
+
+        elapsed = time.time() - start_time
+        print(f'[名字搜索] "{request.fighter_id}" 耗时: {elapsed:.2f}s, 结果: {len(fighter_list)}')
+
+        return {
+            "success": True,
+            "data": page_props,
+            "fighter_list": fighter_list,
+            "pagination": pagination
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"搜索玩家失败: {str(e)}")
 
 
 # ==================== 角色列表自动更新 ====================
