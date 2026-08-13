@@ -1818,8 +1818,8 @@
         
         .search-bar input {
             flex: 1;
-            padding: 8px 14px;
-            font-size: 13px;
+            padding: 5px 12px;
+            font-size: 12px;
             border: 1px solid rgba(255,255,255,0.08);
             background: rgba(0,0,0,0.3);
             color: #ffffff;
@@ -1835,9 +1835,14 @@
         }
         
         .search-btn {
-            padding: 8px 24px;
-            font-size: 13px;
+            /* 收紧尺寸，与筛选栏小按钮风格协调（28px高） */
+            height: 28px;
+            box-sizing: border-box;
+            padding: 0 14px;
+            font-size: 12px;
             font-weight: 600;
+            white-space: nowrap;
+            flex-shrink: 0;
             background: linear-gradient(135deg, #2a2a2a 0%, #3a3a3a 100%);
             border: 1px solid rgba(255,255,255,0.1);
             border-radius: 8px;
@@ -1975,11 +1980,11 @@
             gap: 6px;
         }
         
-        /* 收藏和列表区域 */
+        /* 收藏和列表区域（紧凑布局） */
         .favorites-section,
         .history-section {
             margin: 0 0 8px 0;
-            padding: 14px;
+            padding: 10px;
             background: linear-gradient(145deg, #1a1a1a 0%, #181818 100%);
             border: 1px solid rgba(255,255,255,0.06);
             border-radius: 10px;
@@ -1988,16 +1993,16 @@
         .favorites-section h5,
         .history-section h5 {
             color: #cccccc;
-            font-size: 0.95em;
+            font-size: 12px;
             font-weight: 600;
-            margin: 0 0 10px 0;
+            margin: 0 0 8px 0;
         }
         
         .favorites-list,
         .history-list {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 6px;
         }
         
         /* 收藏项 */
@@ -2005,7 +2010,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 14px;
+            padding: 7px 10px;
             background: rgba(255,255,255,0.02);
             border: 1px solid rgba(255,255,255,0.06);
             border-radius: 8px;
@@ -2024,20 +2029,20 @@
         
         .favorite-name {
             color: #ffffff;
-            font-size: 16px;
+            font-size: 13px;
             font-weight: 600;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
         
         .favorite-id {
             color: #999999;
-            font-size: 11px;
+            font-size: 10px;
             font-family: monospace;
         }
         
         .favorite-player-name {
             color: #cccccc;
-            font-size: 12px;
+            font-size: 11px;
             margin-top: 2px;
         }
         
@@ -2048,8 +2053,8 @@
         
         .btn-favorite-query,
         .btn-remove-fav {
-            padding: 6px 12px;
-            font-size: 14px;
+            padding: 3px 8px;
+            font-size: 12px;
             border: 1px solid rgba(255,255,255,0.08);
             border-radius: 6px;
             cursor: pointer;
@@ -2073,7 +2078,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 14px;
+            padding: 7px 10px;
             background: rgba(255,255,255,0.02);
             border: 1px solid rgba(255,255,255,0.06);
             border-radius: 8px;
@@ -2092,14 +2097,14 @@
         
         .history-id {
             color: #ffffff;
-            font-size: 13px;
+            font-size: 12px;
             font-family: monospace;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
         
         .history-time {
             color: #999999;
-            font-size: 11px;
+            font-size: 10px;
         }
         
         .history-actions {
@@ -2109,8 +2114,8 @@
         
         .btn-query-from-history,
         .btn-fav-from-history {
-            padding: 6px 12px;
-            font-size: 14px;
+            padding: 3px 8px;
+            font-size: 12px;
             border: 1px solid rgba(255,255,255,0.08);
             border-radius: 6px;
             cursor: pointer;
@@ -2129,8 +2134,8 @@
         }
         
         .btn-clear-history {
-            padding: 6px 15px;
-            font-size: 12px;
+            padding: 3px 10px;
+            font-size: 11px;
             background: rgba(255,255,255,0.04);
             border: 1px solid rgba(255,255,255,0.08);
             border-radius: 6px;
@@ -2158,7 +2163,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
         
         .btn-edit-remark {
@@ -3957,16 +3962,16 @@
         }
         body.spacious-mode .favorites-section,
         body.spacious-mode .history-section {
-            padding: 18px;
+            padding: 13px;
             border-radius: 6px;
         }
         body.spacious-mode .favorite-item,
         body.spacious-mode .history-item {
-            padding: 14px;
+            padding: 9px 12px;
             border-radius: 4px;
         }
         body.spacious-mode .favorite-name {
-            font-size: 17px;
+            font-size: 14px;
         }
         /* 宽松模式 - 设置面板 */
         body.spacious-mode .settings-panel {

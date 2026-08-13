@@ -412,6 +412,10 @@ def crawl_battle_log(request: CrawlRequest):
         df = crawler.crawl(pages=request.pages, battle_type=request.battle_type, fetch_profile=True)
         player_profile = crawler.player_profile
         
+        # 同步官方返回的最新玩家名（游戏内改名后全局名跟随更新，避免一直显示登录时缓存的旧名）
+        if crawler.player_name:
+            user_info['player_name'] = crawler.player_name
+        
         # 转换为字典列表
         data = df.to_dict('records')
         

@@ -1612,7 +1612,14 @@
                     // 更新格斗记录
                     matchData = sanitizeRecords(data.data);
                     
-                    // 注意：不更新currentUserInfo，保持原有用户信息显示
+                    // 主页模式下同步官方最新玩家名（游戏内改名后右上角自动更新），查询模式不覆盖登录用户信息
+                    if (!isQueryMode && data.user_info && data.user_info.player_name
+                            && data.user_info.player_name !== currentUserInfo.player_name) {
+                        currentUserInfo.player_name = data.user_info.player_name;
+                        homeData.userInfo = currentUserInfo;
+                        saveLoginState();
+                        updateLoginStatus();
+                    }
                     
                     // 更新玩家资料
                     if (data.player_profile) {
@@ -2867,19 +2874,20 @@
             saveSearchHistory();
         }
         
-        // 清空搜索历史
+        // 清空搜索历史（直接清空，不弹确认框）
         function clearSearchHistory() {
-            if (confirm('确定要清空所有搜索历史吗？')) {
-                searchHistory = [];
-                saveSearchHistory();
-                renderQueryPage();
-            }
+            searchHistory = [];
+            saveSearchHistory();
+            renderQueryPage();
         }
         
-        // 从历史记录查询
+        // 从历史记录查询（足迹子标签下不存在 queryUserId 输入框，直接按ID查询）
         function queryPlayerFromHistory(userId) {
-            document.getElementById('queryUserId').value = userId;
-            queryPlayerData();
+            const input = document.getElementById('queryUserId');
+            if (input) input.value = userId;
+            addToSearchHistory(userId);
+            window.history.pushState({}, '', `/search?uid=${userId}`);
+            handleRoute();
         }
         
         // 加载收藏列表
@@ -2924,19 +2932,20 @@
             showQueryHint('✅ 已添加到收藏列表，点击 ✏️ 按钮可添加备注', 'success');
         }
         
-        // 从收藏列表查询
+        // 从收藏列表查询（同 queryPlayerFromHistory：不依赖搜索子标签的输入框）
         function queryPlayerFromFavorite(userId) {
-            document.getElementById('queryUserId').value = userId;
-            queryPlayerData();
+            const input = document.getElementById('queryUserId');
+            if (input) input.value = userId;
+            addToSearchHistory(userId);
+            window.history.pushState({}, '', `/search?uid=${userId}`);
+            handleRoute();
         }
         
-        // 移除收藏
+        // 移除收藏（直接删除，不弹确认框）
         function removeFavorite(index) {
-            if (confirm('确定要取消收藏吗？')) {
-                favoritePlayers.splice(index, 1);
-                saveFavoritePlayers();
-                renderQueryPage();
-            }
+            favoritePlayers.splice(index, 1);
+            saveFavoritePlayers();
+            renderQueryPage();
         }
         
         // 开始编辑备注（内联编辑）
@@ -3032,13 +3041,11 @@
             const existingIndex = favoritePlayers.findIndex(p => p.userId === userId);
             
             if (existingIndex !== -1) {
-                // 已收藏，取消收藏
-                if (confirm('确定要取消收藏吗？')) {
-                    favoritePlayers.splice(existingIndex, 1);
-                    saveFavoritePlayers();
-                    renderContent();
-                    showQueryHint('✅ 已取消收藏', 'success');
-                }
+                // 已收藏，直接取消收藏（不弹确认框）
+                favoritePlayers.splice(existingIndex, 1);
+                saveFavoritePlayers();
+                renderContent();
+                showQueryHint('✅ 已取消收藏', 'success');
             } else {
                 // 未收藏，添加收藏
                 favoritePlayers.unshift({
