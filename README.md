@@ -57,37 +57,13 @@ SF6 Tracker 是一款专为《街头霸王6》玩家打造的战绩追踪工具�
 
 ## 🏁 FINAL ROUND — 安装
 
-```bash
-# 克隆项目
-git clone https://github.com/HuuuugePony/sf6-tracker.git
-cd sf6-tracker
-
-# 安装依赖
-pip install -r requirements.txt
-```
-或者直接下载已发布的版本 [SF6-Tracker.exe](https://github.com/HuuuugePony/sf6-tracker/releases/download/v0.3/SF6-Tracker-v0.3.exe)
+直接下载已发布的版本 [SF6-Tracker.exe](https://github.com/HuuuugePony/sf6-tracker/releases/download/v0.5/SF6-Tracker-v0.5.exe)
 
 ---
 
 ## 🔥 再次对战！ — 运行方式
 
-### 🖥️ 方式一：桌面应用（推荐）
-
-```bash
-python desktop_app.py
-```
-
 SF6-Tracker.exe 文件直接运行
-
-> 启动原生桌面窗口，无需打开浏览器，沉浸式战斗分析。
-
-### 🌐 方式二：Web 服务
-
-```bash
-uvicorn main:app --host 127.0.0.1 --port 8000
-```
-
-然后在浏览器中访问：**`http://localhost:8000`**
 
 ---
 
@@ -104,23 +80,6 @@ uvicorn main:app --host 127.0.0.1 --port 8000
 
 ---
 
-## 📂 STAGE SELECT — 项目结构
-
-```
-sf6-tracker/
-├── crawler.py              # 🕷️ 采集核心逻辑
-├── main.py                 # 🌐 FastAPI Web 服务
-├── desktop_app.py          # 🖥️ 桌面应用入口
-├── index.html              # 🎨 前端页面
-├── desktop_styles.css      # 🎭 桌面端样式
-├── chunli.ico              # 🎯 应用图标
-├── player_info_schema.md   # 📋 玩家数据字段说明
-├── sf6tracker.spec         # 📦 PyInstaller 打包配置
-├── requirements.txt        # 📦 Python 依赖
-└── README.md               # 📜 项目说明（你正在看的这个）
-```
-
----
 
 ## 🏆 感谢对战！ — 版本
 
@@ -131,6 +90,12 @@ sf6-tracker/
 **v0.3** — *新增格斗圈，优化界面、动画、主题等！*
 
 **v0.4** — *新增数据统计，优化界面、动画、主题等！*
+
+**v0.5** — *主要是优化前端界面~*
+
+**......**
+
+**去release里看更新吧，劳累了~**
 
 ---
 
