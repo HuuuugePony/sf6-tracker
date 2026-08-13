@@ -1127,6 +1127,53 @@ def get_characters(request: CharactersRequest):
         raise HTTPException(status_code=500, detail=f"获取角色列表失败: {str(e)}")
 
 
+# ==================== 版本更新检查 ====================
+
+APP_VERSION = '0.6'  # 当前应用版本（前端 APP_VERSION 常量与此保持同步）
+
+GITHUB_REPO = 'HuuuugePony/sf6-tracker'
+
+_version_cache = {'checked_at': 0.0, 'latest': None}
+
+VERSION_CHECK_TTL = 6 * 3600  # 最新版本查询结果缓存6小时，避免频繁触发GitHub限流
+
+
+@app.get("/api/version-check")
+def check_version():
+    """检查 GitHub Releases 最新版本，供前端版本号比较提示更新
+    GitHub 不可达时静默返回 success=False，不影响主流程
+    """
+    now = time.time()
+    if _version_cache['latest'] and now - _version_cache['checked_at'] < VERSION_CHECK_TTL:
+        return {
+            "success": True,
+            "current": APP_VERSION,
+            "latest": _version_cache['latest'],
+            "from_cache": True
+        }
+    try:
+        import requests
+        resp = requests.get(
+            f'https://api.github.com/repos/{GITHUB_REPO}/releases/latest',
+            headers={'User-Agent': 'sf6-tracker'},
+            timeout=5
+        )
+        if resp.status_code == 200:
+            tag = (resp.json().get('tag_name') or '').strip().lstrip('vV')
+            if tag:
+                _version_cache['latest'] = tag
+                _version_cache['checked_at'] = now
+                return {
+                    "success": True,
+                    "current": APP_VERSION,
+                    "latest": tag,
+                    "from_cache": False
+                }
+    except Exception as e:
+        print(f'[版本检查] 查询最新版本失败: {e}')
+    return {"success": False, "current": APP_VERSION}
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

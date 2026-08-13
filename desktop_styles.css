@@ -255,7 +255,7 @@ body.light-theme .sidebar {
     border-right: 1px solid #dee2e6 !important;
     box-shadow: none !important;
 }
-body.light-theme .sidebar-tab { color: #888 !important; }
+body.light-theme .sidebar-tab { color: #5f6368 !important; }
 body.light-theme .sidebar-tab:hover {
     background: rgba(0,0,0,0.05) !important; color: #333 !important;
 }
@@ -293,7 +293,7 @@ body.light-theme .match-card:hover {
     box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
 }
 body.light-theme .match-player-name { color: #333 !important; }
-body.light-theme .player-id { color: #888 !important; }
+body.light-theme .player-id { color: #6c757d !important; }
 body.light-theme .match-character {
     background: #f0f2f5 !important; color: #555 !important;
     border-color: #dee2e6 !important;
@@ -320,7 +320,7 @@ body.light-theme .side-badge {
     background: #e9ecef !important; color: #333 !important;
 }
 body.light-theme .match-header { border-bottom-color: #dee2e6 !important; }
-body.light-theme .match-footer { border-top-color: #dee2e6 !important; color: #888 !important; }
+body.light-theme .match-footer { border-top-color: #dee2e6 !important; color: #6c757d !important; }
 body.light-theme .player-profile-section {
     background: #ffffff !important; border-color: #dee2e6 !important;
 }
@@ -328,14 +328,14 @@ body.light-theme .player-profile-section:hover {
     border-color: #ced4da !important; box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
 }
 body.light-theme .profile-collapse-btn {
-    background: #f0f2f5 !important; color: #666 !important; border-color: #dee2e6 !important;
+    background: #f0f2f5 !important; color: #495057 !important; border-color: #dee2e6 !important;
 }
 body.light-theme .profile-collapse-btn:hover {
     background: #e9ecef !important; color: #333 !important;
 }
 body.light-theme .profile-header { border-bottom-color: #dee2e6 !important; }
 body.light-theme .profile-title { color: #333 !important; }
-body.light-theme .profile-player-name { color: #666 !important; }
+body.light-theme .profile-player-name { color: #495057 !important; }
 body.light-theme .stat-item {
     background: #f8f9fa !important; border-color: #dee2e6 !important;
 }
@@ -350,7 +350,7 @@ body.sf6-theme .stat-item.stat-time {
     border-color: rgba(0,195,255,0.3) !important;
 }
 body.sf6-theme .stat-item.stat-time .stat-value { color: #00c3ff !important; }
-body.light-theme .stat-label { color: #888 !important; }
+body.light-theme .stat-label { color: #6c757d !important; }
 body.light-theme .stat-value { color: #333 !important; }
 body.light-theme .chart-section {
     background: #ffffff !important; border-color: #dee2e6 !important;
@@ -365,7 +365,7 @@ body.light-theme .chart-container {
 }
 body.light-theme .chart-toggle-btn,
 body.light-theme .chart-type-btn {
-    background: #f0f2f5 !important; color: #666 !important;
+    background: #f0f2f5 !important; color: #495057 !important;
     border-color: #dee2e6 !important;
 }
 body.light-theme .chart-toggle-btn:hover,
@@ -384,9 +384,9 @@ body.light-theme .battle-stats-block h3 {
 body.light-theme .gauge-rate-list .rate-name { color: #555 !important; }
 body.light-theme .gauge-rate-list .rate-value { color: #333 !important; }
 body.light-theme .battle-dl dt {
-    color: #888 !important; border-bottom-color: #dee2e6 !important;
+    color: #6c757d !important; border-bottom-color: #dee2e6 !important;
 }
-body.light-theme .battle-dl .stat-name { color: #666 !important; }
+body.light-theme .battle-dl .stat-name { color: #495057 !important; }
 body.light-theme .battle-dl .stat-count { color: #333 !important; }
 body.light-theme .rival-winrate-panel {
     background: #ffffff !important; border-color: #dee2e6 !important;
@@ -401,7 +401,7 @@ body.light-theme .rival-char-checkbox.checked {
     background: #e9ecef !important; color: #333 !important;
 }
 body.light-theme .rival-winrate-table th {
-    background: #f0f2f5 !important; color: #666 !important;
+    background: #f0f2f5 !important; color: #495057 !important;
 }
 body.light-theme .rival-winrate-table td {
     color: #555 !important;
@@ -451,14 +451,14 @@ body.light-theme .char-picker-panel {
 }
 body.light-theme .char-picker-title { color: #333 !important; }
 body.light-theme .char-picker-trigger {
-    background: #f0f2f5 !important; color: #666 !important;
+    background: #f0f2f5 !important; color: #495057 !important;
     border-color: #dee2e6 !important;
 }
 body.light-theme .char-picker-trigger.has-value {
     border-color: #4a9eff !important; color: #333 !important;
 }
 body.light-theme .profile-detail-toggle {
-    color: #999 !important; border-top-color: #dee2e6 !important;
+    color: #6c757d !important; border-top-color: #dee2e6 !important;
 }
 body.light-theme .profile-detail-toggle:hover { color: #333 !important; }
 /* Inputs & buttons */
@@ -487,7 +487,7 @@ body.light-theme button:hover {
    会把 index.html 中的选中态盖平，这里补上带 !important 的对齐规则 */
 body.light-theme .report-period-btn {
     background: rgba(0,0,0,0.04) !important;
-    color: #666 !important;
+    color: #495057 !important;
     border-color: rgba(0,0,0,0.1) !important;
 }
 body.light-theme .report-period-btn:hover {
@@ -520,7 +520,7 @@ body.light-theme .login-modal-header {
     border-bottom-color: #dee2e6 !important;
 }
 body.light-theme .login-modal-header h3 { color: #333 !important; }
-body.light-theme .close-btn { color: #999 !important; }
+body.light-theme .close-btn { color: #6c757d !important; }
 body.light-theme .close-btn:hover { color: #333 !important; }
 body.light-theme label { color: #555 !important; }
 body.light-theme .player-name { color: #333 !important; }
@@ -553,9 +553,9 @@ body.light-theme .history-item {
     background: #f8f9fa !important; border-color: #dee2e6 !important;
 }
 body.light-theme .favorite-name { color: #333 !important; }
-body.light-theme .favorite-id { color: #888 !important; }
+body.light-theme .favorite-id { color: #6c757d !important; }
 body.light-theme .history-id { color: #333 !important; }
-body.light-theme .history-time { color: #888 !important; }
+body.light-theme .history-time { color: #6c757d !important; }
 body.light-theme .settings-panel h2 {
     color: #333 !important; border-bottom-color: #dee2e6 !important;
 }
@@ -570,10 +570,10 @@ body.light-theme .btn-clear-cache.done-state {
     background: #27ae60 !important;
 }
 body.light-theme .version-badge {
-    background: #e9ecef !important; color: #666 !important;
+    background: #e9ecef !important; color: #495057 !important;
 }
 body.light-theme .theme-switch-btn {
-    background: #ffffff !important; color: #666 !important;
+    background: #ffffff !important; color: #495057 !important;
 }
 body.light-theme .theme-switch-btn.active {
     background: #4a9eff !important; color: #fff !important;

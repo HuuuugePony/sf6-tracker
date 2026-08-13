@@ -2852,7 +2852,7 @@
         }
         
         body.light-theme .fighters-online-status.offline {
-            color: #999999;
+            color: #6c757d;
             background: rgba(0, 0, 0, 0.04);
             border-color: rgba(0, 0, 0, 0.1);
         }
@@ -2920,7 +2920,7 @@
         .search-fighter-card.has-emblem .search-card-time { color: #dddddd; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
         .search-fighter-card.has-emblem .search-card-score { color: #ffffff; text-shadow: 0 1px 3px rgba(0,0,0,0.9); }
         
-        body.light-theme .search-card-time { color: #777777; }
+        body.light-theme .search-card-time { color: #6c757d; }
         body.light-theme .search-card-score { color: #444444; }
         
         /* ==================== 设置面板样式 ==================== */
@@ -3101,7 +3101,7 @@
             border-bottom: 1px solid #dee2e6;
         }
         body.light-theme .header h1 { color: #333; }
-        body.light-theme .header-quote { color: #999; }
+        body.light-theme .header-quote { color: #6c757d; }
         body.light-theme .player-name { color: #333; }
         body.light-theme .player-name:hover { color: #4a9eff; }
         body.light-theme .user-id { color: #666; }
@@ -3116,7 +3116,7 @@
             border-right: 1px solid #dee2e6;
             box-shadow: none;
         }
-        body.light-theme .sidebar-tab { color: #888; }
+        body.light-theme .sidebar-tab { color: #5f6368; }
         body.light-theme .sidebar-tab:hover {
             background: rgba(0,0,0,0.05); color: #333;
         }
@@ -3139,7 +3139,7 @@
             border-top-color: #dee2e6;
             border-bottom-color: #dee2e6;
         }
-        body.light-theme .sub-nav-item { color: #888; }
+        body.light-theme .sub-nav-item { color: #5f6368; }
         body.light-theme .sub-nav-item:hover {
             color: #333; background: rgba(0,0,0,0.05);
         }
@@ -3156,7 +3156,7 @@
         body.light-theme .char-tile {
             border-color: #dee2e6; background: #ffffff;
         }
-        body.light-theme .char-tile-all { color: #666; }
+        body.light-theme .char-tile-all { color: #495057; }
         body.light-theme .char-tile:hover:not(.no-data) {
             border-color: #adb5bd; background: #ffffff;
         }
@@ -3175,11 +3175,11 @@
         }
         body.light-theme .char-picker-header { border-bottom-color: #dee2e6; }
         body.light-theme .char-picker-title { color: #333; }
-        body.light-theme .char-picker-close { color: #999; }
+        body.light-theme .char-picker-close { color: #6c757d; }
         body.light-theme .char-picker-close:hover { color: #333; background: rgba(0, 0, 0, 0.06); }
-        body.light-theme .char-picker-empty { color: #999; }
+        body.light-theme .char-picker-empty { color: #6c757d; }
         body.light-theme .char-picker-trigger {
-            background: #f0f2f5; color: #666; border-color: #dee2e6;
+            background: #f0f2f5; color: #495057; border-color: #dee2e6;
         }
         body.light-theme .char-picker-trigger:hover {
             background: #e9ecef; color: #333; border-color: #adb5bd;
@@ -3201,9 +3201,9 @@
             background: linear-gradient(90deg, transparent, #adb5bd, transparent);
         }
         body.light-theme .match-header { border-bottom-color: #dee2e6; }
-        body.light-theme .match-date { color: #888; }
+        body.light-theme .match-date { color: #6c757d; }
         body.light-theme .match-player-name { color: #333; }
-        body.light-theme .player-id { color: #888; }
+        body.light-theme .player-id { color: #6c757d; }
         body.light-theme .player-id:not(.opponent-id):hover { color: #333; }
         body.light-theme .opponent-id { color: #4a9eff; }
         body.light-theme .match-character {
@@ -3233,15 +3233,15 @@
             background: #e9ecef; color: #333; border-color: #dee2e6;
         }
         body.light-theme .match-vs { color: #adb5bd; }
-        body.light-theme .match-footer { border-top-color: #dee2e6; color: #888; }
+        body.light-theme .match-footer { border-top-color: #dee2e6; color: #6c757d; }
         /* Empty state */
-        body.light-theme .empty-state { color: #999; }
+        body.light-theme .empty-state { color: #6c757d; }
         /* Loading overlays */
         body.light-theme .loading-overlay { background: rgba(255,255,255,0.9); }
         body.light-theme .spinner {
             border-color: #dee2e6; border-top-color: #4a9eff;
         }
-        body.light-theme .loading-text { color: #666; }
+        body.light-theme .loading-text { color: #495057; }
         /* Pagination */
         body.light-theme .pagination { border-top-color: #dee2e6; }
         body.light-theme .page-btn {
@@ -3253,7 +3253,7 @@
         body.light-theme .page-btn.active {
             background: #e9ecef; border-color: #adb5bd;
         }
-        body.light-theme .page-info { color: #888; }
+        body.light-theme .page-info { color: #6c757d; }
         /* Toolbar */
         body.light-theme .toolbar { border-bottom-color: #dee2e6; }
         body.light-theme .toolbar-title { color: #555; }
@@ -3274,12 +3274,12 @@
         }
         body.light-theme .profile-header { border-bottom-color: #dee2e6; }
         body.light-theme .profile-title { color: #333; }
-        body.light-theme .profile-player-name { color: #666; }
+        body.light-theme .profile-player-name { color: #495057; }
         body.light-theme .profile-player-name:hover { color: #4a9eff; }
-        body.light-theme .profile-player-id { color: #999; }
+        body.light-theme .profile-player-id { color: #6c757d; }
         body.light-theme .profile-player-id:hover { color: #4a9eff; }
         body.light-theme .btn-toggle-favorite {
-            color: #666; border-color: #dee2e6;
+            color: #495057; border-color: #dee2e6;
         }
         body.light-theme .btn-toggle-favorite:hover {
             background: rgba(0,0,0,0.04); border-color: #adb5bd; color: #333;
@@ -3287,11 +3287,11 @@
         body.light-theme .stat-item {
             background: #f8f9fa; border-color: #dee2e6;
         }
-        body.light-theme .stat-label { color: #888; }
+        body.light-theme .stat-label { color: #6c757d; }
         body.light-theme .stat-value { color: #333; }
         /* Profile detail toggle */
         body.light-theme .profile-detail-toggle {
-            color: #999; border-top-color: #dee2e6;
+            color: #6c757d; border-top-color: #dee2e6;
         }
         body.light-theme .profile-detail-toggle:hover { color: #333; }
         /* Battle stats */
@@ -3307,14 +3307,14 @@
             background: rgba(0,0,0,0.02);
         }
         body.light-theme .battle-dl dt {
-            color: #888; border-bottom-color: #dee2e6;
+            color: #6c757d; border-bottom-color: #dee2e6;
         }
         body.light-theme .battle-dl .stat-name { color: #666; }
         body.light-theme .battle-dl .stat-count { color: #333; }
         body.light-theme .battle-dl dd ul li:nth-child(odd) {
             background: rgba(0,0,0,0.02);
         }
-        body.light-theme .battle-sub-title { color: #999; }
+        body.light-theme .battle-sub-title { color: #6c757d; }
         /* Chart */
         body.light-theme .chart-section {
             background: #ffffff; border-color: #dee2e6;
@@ -3323,10 +3323,10 @@
             border-color: #ced4da; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
         }
         body.light-theme .chart-title { color: #333; }
-        body.light-theme .chart-stat-item { color: #888; }
+        body.light-theme .chart-stat-item { color: #6c757d; }
         body.light-theme .chart-stat-value { color: #333; }
         body.light-theme .chart-toggle-btn {
-            background: #f0f2f5; color: #666; border-color: #dee2e6;
+            background: #f0f2f5; color: #495057; border-color: #dee2e6;
         }
         body.light-theme .chart-toggle-btn:hover {
             background: #e9ecef; color: #333;
@@ -3335,7 +3335,7 @@
             background: #f8f9fa; color: #ccc;
         }
         body.light-theme .chart-type-btn {
-            background: #f0f2f5; color: #666; border-color: #dee2e6;
+            background: #f0f2f5; color: #495057; border-color: #dee2e6;
         }
         body.light-theme .chart-type-btn:hover {
             background: #e9ecef; color: #333;
@@ -3350,7 +3350,7 @@
             background: rgba(255,255,255,0.95); border-color: #dee2e6;
             color: #333; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
-        body.light-theme .tooltip-label { color: #888; }
+        body.light-theme .tooltip-label { color: #6c757d; }
         body.light-theme .tooltip-value { color: #333; }
         /* Rival winrate panel */
         body.light-theme .rival-winrate-panel {
@@ -3358,7 +3358,7 @@
         }
         body.light-theme .rival-winrate-header { border-bottom-color: #dee2e6; }
         body.light-theme .rival-winrate-title { color: #333; }
-        body.light-theme .rival-winrate-toggle { color: #999; }
+        body.light-theme .rival-winrate-toggle { color: #6c757d; }
         body.light-theme .rival-winrate-toggle:hover { color: #333; }
         body.light-theme .rival-char-checkbox {
             background: #f0f2f5; border-color: #dee2e6; color: #555;
@@ -3370,7 +3370,7 @@
             background: #e9ecef; border-color: #adb5bd; color: #333;
         }
         body.light-theme .rival-winrate-table th {
-            background: #f0f2f5; color: #666;
+            background: #f0f2f5; color: #495057;
         }
         body.light-theme .rival-winrate-table th,
         body.light-theme .rival-winrate-table td {
@@ -3391,7 +3391,7 @@
             border-bottom-color: #dee2e6;
         }
         body.light-theme .login-modal-header h3 { color: #333; }
-        body.light-theme .close-btn { color: #999; }
+        body.light-theme .close-btn { color: #6c757d; }
         body.light-theme .close-btn:hover { color: #333; }
         body.light-theme #cookieInput {
             background: #ffffff; color: #333; border-color: #dee2e6;
@@ -3457,7 +3457,7 @@
             background: #f0f2f5; border-color: #adb5bd;
         }
         body.light-theme .favorite-name { color: #333; }
-        body.light-theme .favorite-id { color: #888; }
+        body.light-theme .favorite-id { color: #6c757d; }
         body.light-theme .favorite-player-name { color: #555; }
         body.light-theme .btn-favorite-query,
         body.light-theme .btn-remove-fav {
@@ -3473,7 +3473,7 @@
             background: #f0f2f5; border-color: #adb5bd;
         }
         body.light-theme .history-id { color: #333; }
-        body.light-theme .history-time { color: #888; }
+        body.light-theme .history-time { color: #6c757d; }
         body.light-theme .btn-query-from-history,
         body.light-theme .btn-fav-from-history {
             background: #f0f2f5; border-color: #dee2e6;
@@ -3483,9 +3483,9 @@
             background: #e9ecef; border-color: #adb5bd;
         }
         body.light-theme .btn-clear-history {
-            background: #f0f2f5; border-color: #dee2e6; color: #666;
+            background: #f0f2f5; border-color: #dee2e6; color: #495057;
         }
-        body.light-theme .empty-hint { color: #999; }
+        body.light-theme .empty-hint { color: #6c757d; }
         /* Remark edit */
         body.light-theme .btn-edit-remark:hover {
             background: rgba(0,0,0,0.04); border-color: #adb5bd;
@@ -3503,7 +3503,7 @@
             border-color: #dee2e6;
         }
         body.light-theme .ranking-region-btn {
-            background: #ffffff; color: #666;
+            background: #ffffff; color: #495057;
         }
         body.light-theme .ranking-region-btn:first-child {
             border-right-color: #dee2e6;
@@ -3544,38 +3544,38 @@
         body.light-theme .ranking-player-name { color: #333; }
         body.light-theme .ranking-player-name:hover { color: #2979ff; }
         body.light-theme .ranking-card-platform {
-            background: #f0f2f5; border-color: #dee2e6; color: #666;
+            background: #f0f2f5; border-color: #dee2e6; color: #495057;
         }
         body.light-theme .ranking-card-title { color: #96703a; }
-        body.light-theme .ranking-card-meta { color: #888; }
-        body.light-theme .ranking-card-region { color: #777; }
-        body.light-theme .ranking-player-id { color: #999; }
+        body.light-theme .ranking-card-meta { color: #6c757d; }
+        body.light-theme .ranking-card-region { color: #6c757d; }
+        body.light-theme .ranking-player-id { color: #6c757d; }
         body.light-theme .ranking-card-char .char-fallback {
             background: #f0f2f5; border-color: #dee2e6; color: #666;
         }
         body.light-theme .ranking-card-mr { color: #d68910; }
-        body.light-theme .ranking-card-mr-label { color: #999; }
+        body.light-theme .ranking-card-mr-label { color: #6c757d; }
         body.light-theme .ranking-page-btn {
             background: #f0f2f5; border-color: #dee2e6; color: #333;
         }
         body.light-theme .ranking-page-btn:hover:not(:disabled) {
             background: #e9ecef; border-color: #adb5bd;
         }
-        body.light-theme .ranking-page-info { color: #666; }
+        body.light-theme .ranking-page-info { color: #495057; }
         body.light-theme .ranking-page-input {
             background: #f0f2f5; border-color: #dee2e6; color: #333;
         }
         body.light-theme .ranking-page-input:focus {
             background: #ffffff; border-color: #adb5bd;
         }
-        body.light-theme .ranking-stats-note { color: #888; }
+        body.light-theme .ranking-stats-note { color: #6c757d; }
         body.light-theme .rstat-card {
             background: #ffffff; border-color: #e0e0e0;
         }
         body.light-theme .rstat-title { color: #333; }
-        body.light-theme .rstat-sub { color: #999; }
+        body.light-theme .rstat-sub { color: #6c757d; }
         body.light-theme .rstat-name { color: #555; }
-        body.light-theme .rstat-val { color: #777; }
+        body.light-theme .rstat-val { color: #5f6368; }
         body.light-theme .rstat-avg { color: #d68910; }
         /* Fighters page */
         body.light-theme .fighters-online-status {
@@ -3588,18 +3588,18 @@
         body.light-theme .settings-panel h2 {
             color: #333; border-bottom-color: #dee2e6;
         }
-        body.light-theme .settings-group-title { color: #888; }
+        body.light-theme .settings-group-title { color: #5f6368; }
         body.light-theme .settings-item {
             background: #ffffff; border-color: #dee2e6;
         }
         body.light-theme .settings-item-label { color: #333; }
-        body.light-theme .settings-item-desc { color: #999; }
+        body.light-theme .settings-item-desc { color: #6c757d; }
         body.light-theme .version-badge {
-            background: #e9ecef; color: #666;
+            background: #e9ecef; color: #495057;
         }
         body.light-theme .theme-switch { border-color: #dee2e6; }
         body.light-theme .theme-switch-btn {
-            background: #ffffff; color: #666;
+            background: #ffffff; color: #495057;
         }
         body.light-theme .theme-switch-btn.active {
             background: #4a9eff; color: #fff;
@@ -4655,7 +4655,7 @@
             border-top-color: #dee2e6;
             border-bottom-color: #dee2e6;
         }
-        body.light-theme .sub-nav-item { color: #888; }
+        body.light-theme .sub-nav-item { color: #5f6368; }
         body.light-theme .sub-nav-item:hover {
             color: #333; background: rgba(0,0,0,0.05);
         }
@@ -4666,7 +4666,7 @@
         body.light-theme .search-result-item { border-bottom-color: rgba(0,0,0,0.06); }
         body.light-theme .search-result-item:hover { background: rgba(41,128,185,0.06); }
         body.light-theme .search-result-name { color: #222; }
-        body.light-theme .search-result-id { color: #888; }
+        body.light-theme .search-result-id { color: #6c757d; }
         body.light-theme .search-result-stats { color: #666; }
 
         /* ---- SF6主题：sub-nav ---- */
@@ -4688,4 +4688,80 @@
         body.sf6-theme .search-result-name { color: #dbe7ff; }
         body.sf6-theme .search-result-id { color: #8fa4c9; }
         body.sf6-theme .search-result-stats { color: #7a8eb5; }
+
+        /* ==================== 新版本提示卡片 ==================== */
+        .update-notice {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            z-index: 3000;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            max-width: 420px;
+            padding: 14px 16px;
+            background: #1c2430;
+            border: 1px solid rgba(74,158,255,0.4);
+            border-radius: 12px;
+            box-shadow: 0 8px 28px rgba(0,0,0,0.45);
+            color: #e0e0e0;
+            font-size: 13px;
+            animation: update-notice-in 0.3s ease;
+        }
+        @keyframes update-notice-in {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .update-notice-icon { font-size: 22px; flex-shrink: 0; }
+        .update-notice-body { flex: 1; min-width: 0; }
+        .update-notice-title { font-weight: 600; color: #ffffff; margin-bottom: 2px; }
+        .update-notice-sub { font-size: 12px; color: #9aa5b1; }
+        .update-notice-btn {
+            flex-shrink: 0;
+            padding: 6px 14px;
+            background: linear-gradient(135deg, #2980b9 0%, #4a9eff 100%);
+            color: #ffffff;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+        .update-notice-btn:hover { opacity: 0.85; }
+        .update-notice-close {
+            flex-shrink: 0;
+            background: none;
+            border: none;
+            color: #8a94a0;
+            font-size: 18px;
+            line-height: 1;
+            cursor: pointer;
+            padding: 2px 4px;
+        }
+        .update-notice-close:hover { color: #ffffff; }
+        /* 亮色主题 */
+        body.light-theme .update-notice {
+            background: #ffffff;
+            border-color: rgba(74,158,255,0.5);
+            box-shadow: 0 8px 28px rgba(0,0,0,0.16);
+            color: #333;
+        }
+        body.light-theme .update-notice-title { color: #212529; }
+        body.light-theme .update-notice-sub { color: #6c757d; }
+        body.light-theme .update-notice-close { color: #888; }
+        body.light-theme .update-notice-close:hover { color: #212529; }
+        /* 春丽主题 */
+        body.sf6-theme .update-notice {
+            background: #0e1834;
+            border-color: rgba(0,195,255,0.45);
+            box-shadow: 0 8px 28px rgba(0,0,0,0.5);
+            color: #dbe7ff;
+        }
+        body.sf6-theme .update-notice-title { color: #ffffff; }
+        body.sf6-theme .update-notice-sub { color: #8fa4c9; }
+        body.sf6-theme .update-notice-btn {
+            background: linear-gradient(135deg, #00c3ff 0%, #2e86de 100%);
+        }
+        body.sf6-theme .update-notice-close { color: #9db1d6; }
+        body.sf6-theme .update-notice-close:hover { color: #ffd400; }
 

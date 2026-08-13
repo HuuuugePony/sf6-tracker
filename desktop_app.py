@@ -143,7 +143,7 @@ def main():
     
     # 创建原生窗口
     window = webview.create_window(
-        title='SF6 Tracker v0.5',
+        title='SF6 Tracker v0.6',
         url=page_url,
         width=1000,
         height=800,

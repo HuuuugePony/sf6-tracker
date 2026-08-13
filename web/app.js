@@ -52,6 +52,12 @@
         let querySubTab = 'search';  // 查询页子标签: 'search' | 'footprint'
         let lastSearchResults = [];  // 名字搜索结果缓存（官方 fighter_banner_list 条目，渲染到右侧内容区）
         
+        // 当前应用版本（更新提示时与 GitHub Releases 最新版本比较）
+        const APP_VERSION = 'v0.6';
+        
+        // 主页/查询对战数据是否加载中：加载未完成时切走再切回，继续显示加载中而非空状态
+        let battleLoading = false;
+        
         // 路由处理 - 根据URL路径和参数显示不同页面
         function handleRoute(shouldRefreshHome = false) {
             const path = window.location.pathname;
@@ -243,6 +249,14 @@
             
             // 从缓存恢复最新角色清单（含官方新角色）
             restoreCharacterRosterCache();
+            
+            // 版本徽章统一显示当前版本
+            document.querySelectorAll('.version-badge').forEach(el => {
+                el.textContent = APP_VERSION;
+            });
+            
+            // 后台检查新版本（不打扰用户，失败静默）
+            checkForUpdate();
             
             // 尝试从 localStorage 恢复登录状态
             const restored = loadLoginState();
@@ -449,11 +463,15 @@
                 window.history.pushState({}, '', '/search');
                 handleRoute(false);
             } else if (tabName === 'ranking') {
+                // 已在排行榜页时再点一次触发刷新（与主页语义一致）
+                const shouldRefresh = (lastActiveTab === 'ranking');
                 lastActiveTab = 'ranking';
-                showRankingPage();
+                showRankingPage(shouldRefresh);
             } else if (tabName === 'fighters') {
+                // 已在格斗圈页时再点一次触发刷新（与主页语义一致）
+                const shouldRefresh = (lastActiveTab === 'fighters');
                 lastActiveTab = 'fighters';
-                showFightersPage();
+                showFightersPage(shouldRefresh);
             } else if (tabName === 'favorites') {
                 lastActiveTab = 'favorites';
                 showFavoritesPage();
@@ -641,7 +659,7 @@
             return `https://www.streetfighter.com/6/buckler/assets/images/material/rank/rank${n}_l.png`;
         }
                 
-        function showRankingPage() {
+        function showRankingPage(shouldRefresh = false) {
             // 更新侧边栏激活状态
             document.querySelectorAll('.sidebar-tab').forEach(tab => {
                 tab.classList.remove('active');
@@ -655,6 +673,12 @@
                     
             // 渲染排行榜页面
             renderRankingPage();
+            
+            // 已在排行榜页再点一次：刷新当前视图数据（与刷新按钮行为一致）
+            if (shouldRefresh) {
+                refreshRankingView();
+                return;
+            }
             
             // 首次进入时自动加载数据
             if (!rankingState.data && !rankingState.loading) {
@@ -1162,7 +1186,7 @@
         let rankingFetchId = 0;
         let battleFetchCtrl = null;  // 主页/查询的对战数据加载共用
         
-        function showFightersPage() {
+        function showFightersPage(shouldRefresh = false) {
             // 更新侧边栏激活状态
             document.querySelectorAll('.sidebar-tab').forEach(tab => {
                 tab.classList.remove('active');
@@ -1176,6 +1200,12 @@
             
             // 渲染格斗圈页面
             renderFightersPage();
+            
+            // 已在格斗圈页再点一次：刷新当前列表（与刷新按钮行为一致）
+            if (shouldRefresh) {
+                refreshFightersData();
+                return;
+            }
             
             // 首次进入时自动加载数据
             if (!fightersState.cache[fightersState.listType] && !fightersState.loading) {
@@ -1573,6 +1603,7 @@
             if (isBattlePageActive()) {
                 document.getElementById('battlesScrollArea').innerHTML = loadingHtml('全力加载中...');
             }
+            battleLoading = true;  // 切走再切回时保持加载中显示
             
             try {
                 let response;
@@ -1647,6 +1678,10 @@
             } catch (error) {
                 if (error.name === 'AbortError') return;  // 被新加载取消，静默退出
                 console.error('刷新请求异常:', error);
+            } finally {
+                if (!battleSignal.aborted) {
+                    battleLoading = false;
+                }
             }
         }
         
@@ -1701,7 +1736,10 @@
                 // 角色对阵胜率模式
                 battlesScrollArea.innerHTML = renderRivalWinrateContent();
             } else if (matchData.length === 0) {
-                battlesScrollArea.innerHTML = emptyStateHtml('📊', '暂无对战记录');
+                // 数据加载中时继续显示加载动画，避免切走再切回时误显示空状态
+                battlesScrollArea.innerHTML = battleLoading
+                    ? loadingHtml('全力加载中...')
+                    : emptyStateHtml('📊', '暂无对战记录');
             } else {
                 // 渲染折线图和战绩列表
                 let scrollableHtml = renderLineChart();
@@ -2453,6 +2491,7 @@
             try {
                 // 统一加载显示：内容区spinner（无遮罩不阻挡操作）
                 document.getElementById('battlesScrollArea').innerHTML = loadingHtml('正在加载对战记录...');
+                battleLoading = true;  // 切走再切回时保持加载中显示
                 
                 const response = await fetch(`${API_BASE}/api/query-player`, {
                     method: 'POST',
@@ -2483,6 +2522,10 @@
             } catch (error) {
                 if (error.name === 'AbortError') return;  // 被新加载取消，静默退出
                 console.error('查询请求异常:', error);
+            } finally {
+                if (!battleSignal.aborted) {
+                    battleLoading = false;
+                }
             }
         }
         
@@ -3106,45 +3149,8 @@
             `;
         }
         
-        function renderMatchCards() {
-            const fixedNavSection = document.getElementById('fixedNavSection');
-            const battlesScrollArea = document.getElementById('battlesScrollArea');
-            
-            // 更新固定区域（玩家资料 + 导航栏）- 始终显示
-            let fixedHtml = '';
-            if (playerProfile) {
-                fixedHtml += renderPlayerProfile();
-            }
-            
-            fixedHtml += `
-                <div class="sub-nav">
-                    <div class="sub-nav-item ${currentBattleType === 'all' ? 'active' : ''}" data-type="all" onclick="switchBattleType('all')">全部</div>
-                    <div class="sub-nav-item ${currentBattleType === 'rank' ? 'active' : ''}" data-type="rank" onclick="switchBattleType('rank')">排位赛</div>
-                    <div class="sub-nav-item ${currentBattleType === 'casual' ? 'active' : ''}" data-type="casual" onclick="switchBattleType('casual')">休闲赛</div>
-                    <div class="sub-nav-item ${currentBattleType === 'custom' ? 'active' : ''}" data-type="custom" onclick="switchBattleType('custom')">比赛间对战</div>
-                    <div class="sub-nav-item ${currentBattleType === 'hub' ? 'active' : ''}" data-type="hub" onclick="switchBattleType('hub')">格斗中心对战</div>
-                    <div class="character-filter">
-                        ${(() => {
-                            const imgMap = buildCharacterImageMap();
-                            return renderCharPickerTrigger({ onclick: 'openMyCharacterPicker()', label: '全部角色', value: getCharacterDisplayName(selectedCharacter), imgMap: imgMap })
-                                + renderCharPickerTrigger({ onclick: 'openOpponentCharacterPicker()', label: '全部对手', value: getCharacterDisplayName(selectedOpponentCharacter), imgMap: imgMap });
-                        })()}
-                    </div>
-                </div>
-            `;
-            
-            fixedNavSection.innerHTML = fixedHtml;
-            
-            // 更新可滚动区域（折线图 + 战绩列表）
-            let scrollableHtml = renderLineChart();
-            scrollableHtml += renderMatchCardsHTML();
-            battlesScrollArea.innerHTML = scrollableHtml;
-            
-            // 添加图表节点的事件监听
-            setTimeout(() => {
-                initChartTooltip();
-            }, 100);
-        }
+        // 旧版 renderMatchCards 已移除：翻页/角色筛选/图表切换/刷新等操作统一走 renderContent，
+        // 保证二级导航（含"角色对阵"）与角色筛选区始终完整渲染
         
         // ==================== 每局结果图标条 ====================
         
@@ -3290,7 +3296,7 @@
                 return;
             }
             currentPage = page;
-            renderMatchCards();
+            renderContent();
         }
         
         // 全部角色列表（id → 中文名 + 官网tool名，用于头像平铺筛选）
@@ -3579,14 +3585,14 @@
             selectedCharacter = character;
             selectedOpponentCharacter = '';  // 切换角色时重置对手筛选
             currentPage = 1;  // 重置页码
-            renderMatchCards();
+            renderContent();
         }
         
         // 根据选中的对手角色筛选数据
         function filterByOpponentCharacter(character) {
             selectedOpponentCharacter = character;
             currentPage = 1;  // 重置页码
-            renderMatchCards();
+            renderContent();
         }
         
         // 获取筛选后的数据
@@ -3604,7 +3610,7 @@
         // 切换图表指标
         function switchChartMetric(metric) {
             chartMetric = metric;
-            renderMatchCards();  // 重新渲染整个区域（包括图表和战绩）
+            renderContent();  // 重新渲染整个区域（包括图表和战绩）
         }
         
         // 切换图表展开/收起状态（使用CSS动画，不重建DOM）
@@ -4043,6 +4049,7 @@
             if (isBattlePageActive()) {
                 document.getElementById('battlesScrollArea').innerHTML = loadingHtml('全力加载中...');
             }
+            battleLoading = true;  // 切走再切回时保持加载中显示
             try {
                 const response = await fetch(`${API_BASE}/api/crawl`, {
                     method: 'POST',
@@ -4095,6 +4102,10 @@
                 console.error('请求失败:', error);
                 if (isBattlePageActive()) {
                     renderContent();
+                }
+            } finally {
+                if (!battleSignal.aborted) {
+                    battleLoading = false;
                 }
             }
         }
@@ -4163,6 +4174,7 @@
             if (isBattlePageActive()) {
                 document.getElementById('battlesScrollArea').innerHTML = loadingHtml('正在刷新对战记录...');
             }
+            battleLoading = true;  // 切走再切回时保持加载中显示
             try {
                 let response;
                 
@@ -4218,7 +4230,7 @@
                     }
                     
                     if (isBattlePageActive()) {
-                        renderMatchCards();
+                        renderContent();
                     }
                 } else {
                     console.error('刷新失败:', data);
@@ -4230,6 +4242,7 @@
                 alert('请求失败: ' + error.message);
             } finally {
                 if (!battleSignal.aborted) {
+                    battleLoading = false;
                     if (refreshBtn) {
                         refreshBtn.disabled = false;
                     }
@@ -4524,5 +4537,68 @@
                     </div>
                 </div>
             `;
+        }
+
+        // ==================== 版本更新检查 ====================
+
+        // 比较两个版本号（支持 v 前缀），返回 a-b 的正负：正数表示 a 更新
+        function compareVersions(a, b) {
+            const parse = (v) => String(v || '').replace(/^[vV]/, '').split('.').map(n => parseInt(n) || 0);
+            const va = parse(a);
+            const vb = parse(b);
+            const len = Math.max(va.length, vb.length);
+            for (let i = 0; i < len; i++) {
+                const x = va[i] || 0;
+                const y = vb[i] || 0;
+                if (x !== y) return x - y;
+            }
+            return 0;
+        }
+
+        // 检查新版本：后端代理查询 GitHub Releases 最新版本，带重试（桌面端启动时后端可能尚未就绪）
+        async function checkForUpdate(retry = 0) {
+            try {
+                const response = await fetch(`${API_BASE}/api/version-check`);
+                if (!response.ok) return;
+                const data = await response.json();
+                if (!data || !data.success || !data.latest) return;
+                const dismissed = localStorage.getItem('sf6_update_dismissed');
+                if (compareVersions(data.latest, APP_VERSION) > 0 && dismissed !== data.latest) {
+                    showUpdateNotice(data.latest);
+                }
+            } catch (error) {
+                // 后端未就绪时稍后重试；接口返回失败（如GitHub不可达）则静默放弃
+                if (retry < 6) {
+                    setTimeout(() => checkForUpdate(retry + 1), 2000);
+                }
+            }
+        }
+
+        // 右下角新版本提示卡片，关闭后记住该版本不再重复提示
+        function showUpdateNotice(latest) {
+            if (document.getElementById('updateNotice')) return;
+            const notice = document.createElement('div');
+            notice.id = 'updateNotice';
+            notice.className = 'update-notice';
+            notice.innerHTML = `
+                <span class="update-notice-icon">🚀</span>
+                <div class="update-notice-body">
+                    <div class="update-notice-title">发现新版本 v${escapeHtml(latest)}</div>
+                    <div class="update-notice-sub">当前版本 ${APP_VERSION}，建议前往 GitHub 下载更新</div>
+                </div>
+                <a class="update-notice-btn" href="https://github.com/HuuuugePony/sf6-tracker/releases" target="_blank" rel="noopener noreferrer">前往更新</a>
+                <button class="update-notice-close" onclick="dismissUpdateNotice('${escapeHtml(latest)}')" title="忽略该版本">&times;</button>
+            `;
+            document.body.appendChild(notice);
+        }
+
+        function dismissUpdateNotice(latest) {
+            try {
+                localStorage.setItem('sf6_update_dismissed', latest);
+            } catch (error) {
+                console.warn('保存更新忽略状态失败:', error);
+            }
+            const el = document.getElementById('updateNotice');
+            if (el) el.remove();
         }
 
