@@ -6,7 +6,7 @@
             document.body.style.visibility = 'visible';
         }
         
-        const API_BASE = 'http://localhost:8000';
+        const API_BASE = 'http://localhost:7648';
         let sessionId = null;
         let cookie = null;
         let isLoggedIn = false;

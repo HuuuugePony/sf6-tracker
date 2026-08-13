@@ -67,7 +67,7 @@ def start_server():
         import uvicorn
         log_error('模块导入成功，正在启动 uvicorn...')
         # 静默模式启动，不输出日志到控制台
-        uvicorn.run(app, host="127.0.0.1", port=8000, log_level="error")
+        uvicorn.run(app, host="127.0.0.1", port=7648, log_level="error")
     except Exception as e:
         log_error(f'服务启动失败: {e}')
         log_error(traceback.format_exc())
@@ -105,7 +105,7 @@ def wait_for_server(timeout=15):
     start_time = time.time()
     while time.time() - start_time < timeout:
         try:
-            resp = urllib.request.urlopen('http://127.0.0.1:8000/home', timeout=2)
+            resp = urllib.request.urlopen('http://127.0.0.1:7648/home', timeout=2)
             if resp.status == 200:
                 return True
         except Exception:
@@ -139,7 +139,7 @@ def main():
     
     # URL 加时间戳强制 WebView2 每次加载最新版本，避免缓存
     import urllib.parse
-    page_url = f'http://localhost:8000/home?v={int(time.time())}'
+    page_url = f'http://localhost:7648/home?v={int(time.time())}'
     
     # 创建原生窗口
     window = webview.create_window(
