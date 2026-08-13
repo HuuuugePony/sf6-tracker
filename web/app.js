@@ -50,6 +50,7 @@
         let favoriteBattles = [];  // 收藏的对局列表
         let favBattleFilter = 'all';  // 收藏对局筛选: all/pending/watched
         let querySubTab = 'search';  // 查询页子标签: 'search' | 'footprint'
+        let lastSearchResults = [];  // 名字搜索结果缓存（官方 fighter_banner_list 条目，渲染到右侧内容区）
         
         // 路由处理 - 根据URL路径和参数显示不同页面
         function handleRoute(shouldRefreshHome = false) {
@@ -150,7 +151,7 @@
             // 如果没有cookie,先提示登录
             if (!cookie) {
                 renderQueryPage();
-                showStatus('queryStatus', '❌ 请先登录后查看其他玩家战绩', 'error');
+                showQueryHint('❌ 请先登录后查看其他玩家战绩', 'error');
                 return;
             }
             
@@ -188,7 +189,7 @@
                 if (data.success) {
                     // 保存到查询数据缓存
                     queryData.userId = userId;
-                    queryData.matchData = data.data || [];
+                    queryData.matchData = sanitizeRecords(data.data);
                     queryData.userInfo = data.user_info || { user_id: userId, player_name: `玩家${userId}` };
                     queryData.profile = data.player_profile || null;
                     
@@ -209,14 +210,14 @@
                 } else {
                     if (lastActiveTab === 'query') {
                         renderQueryPage();
-                        showStatus('queryStatus', `❌ 查询失败`, 'error');
+                        showQueryHint('❌ 查询失败', 'error');
                     }
                 }
             } catch (error) {
                 console.error('查询请求异常:', error);
                 if (lastActiveTab === 'query') {
                     renderQueryPage();
-                    showStatus('queryStatus', `❌ 查询失败: ${error.message}`, 'error');
+                    showQueryHint(`❌ 查询失败: ${error.message}`, 'error');
                 }
             } finally {
                 if (queryBtn) queryBtn.disabled = false;
@@ -717,7 +718,7 @@
             // 渲染排行榜数据区域
             if (rankingState.view === 'stats') {
                 if (rankingState.statsLoading) {
-                    battlesScrollArea.innerHTML = `<div class="ranking-content">${loadingHtml('正在统计传奇段位前500名数据...')}</div>`;
+                    battlesScrollArea.innerHTML = `<div class="ranking-content">${loadingHtml('正在统计前500名数据...')}</div>`;
                 } else if (rankingState.statsError) {
                     battlesScrollArea.innerHTML = `<div class="ranking-content">${emptyStateHtml('❌', rankingState.statsError)}</div>`;
                 } else if (rankingState.stats) {
@@ -784,6 +785,7 @@
                 const titleVal = titleData.title_data_val || '';
                 const titlePlate = titleData.title_data_plate_name || '';
                 const region = banner.home_name || '';
+                const homeId = banner.home_id || 0;
                 
                 // 角色图片URL
                 const charImgUrl = charTool ? `https://www.streetfighter.com/6/buckler/assets/images/material/character/character_${charTool}_l.png` : '';
@@ -820,7 +822,7 @@
                                 </div>
                                 ${titleVal ? `<div class="ranking-card-meta"><span class="ranking-card-title">${titleVal}</span></div>` : ''}
                                 <div class="ranking-card-meta">
-                                    ${region ? `<span class="ranking-card-region">🌐 ${region}</span>` : ''}
+                                    ${renderFlagHtml(homeId, region)}
                                     <span>${charName}</span>
                                     ${shortId ? `<span class="ranking-player-id" oncontextmenu="return copyToClipboard('${shortId}', event)" title="右键复制ID">${shortId}</span>` : ''}
                                 </div>
@@ -1226,6 +1228,14 @@
             }
         }
         
+        // 国旗图（官方 fighter_banner 通用：home_id → frag###.png，tooltip显示地区名；内联宽高兜底防布局撑爆）
+        function renderFlagHtml(homeId, region) {
+            if (!homeId) {
+                return region ? `<span class="ranking-card-region">🌐 ${escapeHtml(region)}</span>` : '';
+            }
+            return `<img class="ranking-card-flag" src="https://www.streetfighter.com/6/buckler/assets/images/material/national_frag/frag${String(homeId).padStart(3, '0')}.png" width="18" height="12" alt="${escapeHtml(region || '')}" title="${escapeHtml(region || '')}" onerror="this.outerHTML='<span class=\\'ranking-card-region\\'>🌐 ${escapeHtml(region || '')}</span>'">`;
+        }
+        
         // 格斗圈列表项字段解析（真实结构：角色/段位数据在fighter_banner_info内）
         function parseFighterItem(item) {
             const banner = item.fighter_banner_info || item || {};
@@ -1256,6 +1266,7 @@
                 shortId: personalInfo.short_id || item.short_id || '',
                 platform: personalInfo.platform_name || '',
                 region: banner.home_name || '',
+                homeId: banner.home_id || 0,
                 onlineStatus: onlineStatus,
                 onlineOffline: onlineOffline,
                 charName: charName,
@@ -1312,7 +1323,7 @@
             const page = fightersState.pages[fightersState.listType];
             
             const rows = fighterList.map((item) => {
-                const { name, shortId, platform, region, onlineStatus, onlineOffline, charName, charTool, mr, lp, leagueRank, masterLeague, titleVal, titlePlate } = item;
+                const { name, shortId, platform, region, homeId, onlineStatus, onlineOffline, charName, charTool, mr, lp, leagueRank, masterLeague, titleVal, titlePlate } = item;
                 
                 // 角色图片URL
                 const charImgUrl = charTool ? `https://www.streetfighter.com/6/buckler/assets/images/material/character/character_${charTool}_l.png` : '';
@@ -1343,7 +1354,7 @@
                                 </div>
                                 ${titleVal ? `<div class="ranking-card-meta"><span class="ranking-card-title">${titleVal}</span></div>` : ''}
                                 <div class="ranking-card-meta">
-                                    ${region ? `<span class="ranking-card-region">🌐 ${region}</span>` : ''}
+                                    ${renderFlagHtml(homeId, region)}
                                     ${charName ? `<span>${charName}</span>` : ''}
                                     ${shortId ? `<span class="ranking-player-id" oncontextmenu="return copyToClipboard('${shortId}', event)" title="右键复制ID">${shortId}</span>` : ''}
                                 </div>
@@ -1599,7 +1610,7 @@
                 
                 if (data.success) {
                     // 更新格斗记录
-                    matchData = data.data || [];
+                    matchData = sanitizeRecords(data.data);
                     
                     // 注意：不更新currentUserInfo，保持原有用户信息显示
                     
@@ -2133,12 +2144,18 @@
                             <div class="sub-nav-item${querySubTab === 'footprint' ? ' active' : ''}" onclick="switchQuerySubTab('footprint')">足迹</div>
                         </div>
                         <div id="querySubPanel"></div>
+                        <div id="queryHint"></div>
                     </div>
                 </div>
             `;
             
             // 渲染当前子标签内容
             renderQuerySubPanel();
+            
+            // 恢复名字搜索结果到右侧内容区（页面重渲染后保持展示）
+            if (querySubTab === 'search' && lastSearchResults.length > 0) {
+                renderNameSearchResults();
+            }
         }
         
         // 切换查询页子标签
@@ -2177,12 +2194,24 @@
                         <input type="text" id="queryFighterName" placeholder="输入玩家名字" onkeypress="if(event.key==='Enter') searchFighterByName()">
                         <button onclick="searchFighterByName()" id="nameSearchBtn" class="search-btn">搜索</button>
                     </div>
-                    <div id="nameSearchStatus"></div>
                     <div id="nameSearchResults" class="name-search-results"></div>
-                    
-                    <div id="queryStatus"></div>
                 </div>
             `;
+        }
+        
+        // 查询页轻量内联提示（替代已删除的 queryStatus 大框；查询/足迹两个子标签共用）
+        function showQueryHint(message, type) {
+            const hint = document.getElementById('queryHint');
+            if (!hint) return;
+            hint.className = `query-inline-hint ${type || ''}`.trim();
+            hint.innerHTML = message;
+        }
+        
+        function clearQueryHint() {
+            const hint = document.getElementById('queryHint');
+            if (!hint) return;
+            hint.className = '';
+            hint.innerHTML = '';
         }
         
         // 渲染“足迹”子标签
@@ -2245,24 +2274,23 @@
         async function searchFighterByName() {
             const nameInput = document.getElementById('queryFighterName');
             const resultsDiv = document.getElementById('nameSearchResults');
-            const statusDiv = document.getElementById('nameSearchStatus');
             const btn = document.getElementById('nameSearchBtn');
             
             const name = nameInput.value.trim();
             if (!name) {
-                showStatus('nameSearchStatus', '❌ 请输入玩家名字', 'error');
+                showQueryHint('❌ 请输入玩家名字', 'error');
                 return;
             }
             
             if (!cookie) {
-                showStatus('nameSearchStatus', '❌ 请先登录获取Cookie', 'error');
+                showQueryHint('❌ 请先登录获取Cookie', 'error');
                 return;
             }
             
             try {
                 btn.disabled = true;
                 resultsDiv.innerHTML = '';
-                showStatus('nameSearchStatus', '🔍 搜索中...', 'info');
+                showQueryHint('🔍 搜索中...', 'info');
                 
                 const response = await fetch(`${API_BASE}/api/search-fighter`, {
                     method: 'POST',
@@ -2277,37 +2305,100 @@
                 const data = await response.json();
                 
                 if (data.success && data.fighter_list && data.fighter_list.length > 0) {
-                    statusDiv.innerHTML = '';
-                    resultsDiv.innerHTML = data.fighter_list.map(fighter => {
-                        const shortId = fighter.short_id || fighter.player?.short_id || fighter.user_id || '';
-                        const fighterName = fighter.fighter_id || fighter.player?.fighter_id || fighter.name || '';
-                        const lp = fighter.league_point || fighter.lp || 0;
-                        const rank = fighter.league_rank_display || fighter.league_rank || '-';
-                        const character = fighter.character_id || fighter.character_name || '';
-                        
-                        return `
-                            <div class="search-result-item" onclick="queryPlayerById('${shortId}')">
-                                <div class="search-result-name">${fighterName || '未知'}</div>
-                                <div class="search-result-id">ID: ${shortId}</div>
-                                <div class="search-result-stats">
-                                    ${lp ? `<span class="detail-item">LP: ${lp}</span>` : ''}
-                                    ${rank ? `<span class="detail-item">${rank}</span>` : ''}
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
+                    clearQueryHint();
+                    // 结果渲染到右侧内容区（格斗圈卡片风格），左侧面板仅显示紧凑计数提示
+                    lastSearchResults = data.fighter_list;
+                    resultsDiv.innerHTML = `<div class="search-count-hint">已找到 ${data.fighter_list.length} 名玩家 →</div>`;
+                    renderNameSearchResults();
                 } else if (data.success) {
-                    statusDiv.innerHTML = '';
+                    clearQueryHint();
                     resultsDiv.innerHTML = '<div class="empty-hint">未找到匹配的玩家</div>';
+                    lastSearchResults = [];
+                    renderNameSearchResults();
                 } else {
-                    showStatus('nameSearchStatus', '❌ 搜索失败', 'error');
+                    showQueryHint('❌ 搜索失败', 'error');
                 }
             } catch (error) {
                 console.error('名字搜索异常:', error);
-                showStatus('nameSearchStatus', '❌ 搜索失败: ' + error.message, 'error');
+                showQueryHint('❌ 搜索失败: ' + error.message, 'error');
             } finally {
                 btn.disabled = false;
             }
+        }
+        
+        // 格式化活跃时间带（官方 play_time_zone：start_hour/start_minute/end_hour/end_minute）
+        function formatPlayTimeZone(ptz) {
+            if (!ptz || (ptz.start_hour === 0 && ptz.start_minute === 0 && ptz.end_hour === 0 && ptz.end_minute === 0)) return '';
+            const p2 = n => String(n).padStart(2, '0');
+            return `${p2(ptz.start_hour || 0)}:${p2(ptz.start_minute || 0)}~${p2(ptz.end_hour || 0)}:${p2(ptz.end_minute || 0)}`;
+        }
+        
+        // 名字搜索结果渲染到右侧内容区：格斗圈卡片风格 + 官方右侧状态区（国旗/活跃时间带/在线状态）
+        function renderNameSearchResults() {
+            const area = document.getElementById('battlesScrollArea');
+            if (!area) return;
+            
+            if (!lastSearchResults.length) {
+                area.innerHTML = emptyStateHtml('🔍', '未找到匹配的玩家');
+                return;
+            }
+            
+            const rows = lastSearchResults.map(fighter => {
+                // 条目即官方 fighter_banner 结构，复用格斗圈字段解析
+                const item = parseFighterItem(fighter);
+                const { name, shortId, platform, onlineStatus, onlineOffline, charName, charTool, mr, lp, leagueRank, masterLeague, titleVal, titlePlate } = item;
+                const homeId = fighter.home_id || item.homeId;
+                const timeZoneText = formatPlayTimeZone(fighter.play_time_zone);
+                
+                // 称号底板图（与格斗圈卡片一致）
+                const emblemImgHtml = titlePlate
+                    ? `<img class="ranking-card-emblem" src="https://www.streetfighter.com/6/buckler/assets/images/material/title/${titlePlate}.png" alt="" onerror="this.style.display='none'">`
+                    : '';
+                // 段位图标 + 官方风格分数文案（22813积分 / MR1500）
+                const rankIconUrl = getFightersRankIconUrl(leagueRank, masterLeague);
+                const scoreHtml = mr > 0 ? `MR${mr}` : (lp > 0 ? `${lp}积分` : '');
+                // 角色头像
+                const charImgUrl = charTool ? `https://www.streetfighter.com/6/buckler/assets/images/material/character/character_${charTool}_l.png` : '';
+                const charImgHtml = charImgUrl
+                    ? `<img src="${charImgUrl}" alt="${escapeHtml(charName)}" onerror="this.parentElement.innerHTML='<div class=\\'char-fallback\\'>${escapeHtml(charName) || '?'}</div>'">`
+                    : `<div class="char-fallback">${escapeHtml(charName) || '?'}</div>`;
+                // 国旗图（复用通用函数，tooltip显示地区名）
+                const flagHtml = renderFlagHtml(homeId, item.region);
+                const cardClickAttrs = shortId ? ` onclick="queryPlayerById('${shortId}', event)"` : '';
+                
+                return `
+                    <div class="ranking-card fighters-card search-fighter-card${titlePlate ? ' has-emblem' : ''}"${cardClickAttrs}>
+                        <div class="ranking-card-visual${titlePlate ? ' has-emblem' : ''}">
+                            ${emblemImgHtml}
+                            <div class="ranking-card-info">
+                                <div class="ranking-card-name-row">
+                                    ${platform ? `<span class="ranking-card-platform">${platform}</span>` : ''}
+                                    <span class="ranking-player-name">${escapeHtml(name)}</span>
+                                </div>
+                                ${titleVal ? `<div class="ranking-card-meta"><span class="ranking-card-title">${escapeHtml(titleVal)}</span></div>` : ''}
+                                <div class="ranking-card-meta">
+                                    ${flagHtml}
+                                    ${scoreHtml ? `<span class="search-card-score">${scoreHtml}</span>` : ''}
+                                    ${shortId ? `<span class="ranking-player-id" oncontextmenu="return copyToClipboard('${shortId}', event)" title="右键复制ID">${shortId}</span>` : ''}
+                                </div>
+                            </div>
+                            ${(charTool || charName) ? `<div class="ranking-card-char">${charImgHtml}</div>` : ''}
+                        </div>
+                        <div class="ranking-card-divider"></div>
+                        <div class="search-card-status">
+                            ${rankIconUrl ? `<img class="search-card-rankicon" src="${rankIconUrl}" width="90" height="90" alt="段位" onerror="this.style.display='none'">` : ''}
+                            ${timeZoneText ? `<span class="search-card-time" title="活跃时间带">活跃 ${timeZoneText}</span>` : ''}
+                            ${onlineStatus ? `<span class="fighters-online-status ${onlineOffline ? 'offline' : ''}">${escapeHtml(onlineStatus)}</span>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            area.innerHTML = `
+                <div class="ranking-content">
+                    <div class="ranking-list">${rows}</div>
+                </div>
+            `;
         }
         
         // 查询玩家数据
@@ -2317,12 +2408,12 @@
             const userId = userIdInput.value.trim();
             
             if (!userId) {
-                showStatus('queryStatus', '❌ 请输入玩家ID', 'error');
+                showQueryHint('❌ 请输入玩家ID', 'error');
                 return;
             }
             
             if (!cookie) {
-                showStatus('queryStatus', '❌ 请先登录获取Cookie', 'error');
+                showQueryHint('❌ 请先登录获取Cookie', 'error');
                 return;
             }
             
@@ -2373,7 +2464,7 @@
                 
                 if (data.success) {
                     // 更新全局数据
-                    matchData = data.data || [];
+                    matchData = sanitizeRecords(data.data);
                     // 注意：不更新currentUserInfo，保持原有用户信息显示
                     playerProfile = data.player_profile || null;
                     
@@ -2816,7 +2907,7 @@
             // 检查是否已存在
             const existing = favoritePlayers.find(p => p.userId === userId);
             if (existing) {
-                showStatus('queryStatus', '⚠️ 该玩家已在收藏列表中', 'error');
+                showQueryHint('⚠️ 该玩家已在收藏列表中', 'error');
                 return;
             }
             
@@ -2830,7 +2921,7 @@
             
             saveFavoritePlayers();
             renderQueryPage();
-            showStatus('queryStatus', '✅ 已添加到收藏列表，点击 ✏️ 按钮可添加备注', 'success');
+            showQueryHint('✅ 已添加到收藏列表，点击 ✏️ 按钮可添加备注', 'success');
         }
         
         // 从收藏列表查询
@@ -2946,7 +3037,7 @@
                     favoritePlayers.splice(existingIndex, 1);
                     saveFavoritePlayers();
                     renderContent();
-                    showStatus('queryStatus', '✅ 已取消收藏', 'success');
+                    showQueryHint('✅ 已取消收藏', 'success');
                 }
             } else {
                 // 未收藏，添加收藏
@@ -2958,7 +3049,7 @@
                 });
                 saveFavoritePlayers();
                 renderContent();
-                showStatus('queryStatus', '✅ 已添加到收藏列表', 'success');
+                showQueryHint('✅ 已添加到收藏列表', 'success');
             }
         }
         
@@ -3081,9 +3172,9 @@
                 const mv = typeof my[i] === 'number' ? my[i] : 0;
                 const ov = typeof opp[i] === 'number' ? opp[i] : 0;
                 rowsHtml += `<div class="round-score-row">
-                    <img class="round-icon" src="${iconUrl(mv, 'l')}" alt="第${i + 1}局" title="第${i + 1}局">
+                    <img class="round-icon" src="${iconUrl(mv, 'l')}" alt="第${i + 1}局" title="第${i + 1}局" onerror="this.style.visibility='hidden'">
                     <span class="round-label">${i + 1}</span>
-                    <img class="round-icon flip" src="${iconUrl(ov, 'r')}" alt="第${i + 1}局" title="第${i + 1}局">
+                    <img class="round-icon flip" src="${iconUrl(ov, 'r')}" alt="第${i + 1}局" title="第${i + 1}局" onerror="this.style.visibility='hidden'">
                 </div>`;
             }
             return `<div class="round-score" title="每局结果（左：自己，右：对手）">${rowsHtml}</div>`;
@@ -3804,6 +3895,7 @@
 
         function showStatus(elementId, message, type) {
             const element = document.getElementById(elementId);
+            if (!element) return;  // 目标容器不存在时静默跳过，避免空指针报错
             element.className = `status ${type}`;
             element.innerHTML = message;
         }
@@ -3960,7 +4052,7 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    matchData = data.data || [];
+                    matchData = sanitizeRecords(data.data);
                     // 更新用户信息
                     if (data.user_info) {
                         currentUserInfo = data.user_info;
@@ -4024,7 +4116,7 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    matchData = data.data || [];
+                    matchData = sanitizeRecords(data.data);
                     // 更新用户信息
                     if (data.user_info) {
                         currentUserInfo = data.user_info;
@@ -4099,7 +4191,7 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    matchData = data.data || [];
+                    matchData = sanitizeRecords(data.data);
                     currentPage = 1;  // 刷新后页码回到第一页
                     // 注意：不更新currentUserInfo，保持原有用户信息显示
                     
@@ -4144,6 +4236,32 @@
             const div = document.createElement('div');
             div.textContent = text == null ? '' : String(text);
             return div.innerHTML;
+        }
+
+        // ==================== 后端脏数据清洗 ====================
+        // 后端在个别边界情况下可能把 Python 的 None 转成字面量字符串（如 "None"、"M阶None"、"None积分"），
+        // 渲染前统一清洗，避免界面显示 "None"、用 "None" 作为图片URL/玩家ID
+        const DIRTY_NONE_VALUES = new Set(['None', 'null', 'NaN', 'undefined']);
+
+        function cleanNoneStr(v) {
+            if (typeof v !== 'string') return v;
+            const t = v.trim();
+            if (DIRTY_NONE_VALUES.has(t)) return '';
+            // 段位显示字段的脏值（如 "M阶None"、"None积分"）直接降级为 "-"
+            if (t === 'M阶None' || t === 'None积分') return '-';
+            return v;
+        }
+
+        function sanitizeRecord(r) {
+            if (!r || typeof r !== 'object') return r;
+            for (const k of Object.keys(r)) {
+                if (typeof r[k] === 'string') r[k] = cleanNoneStr(r[k]);
+            }
+            return r;
+        }
+
+        function sanitizeRecords(list) {
+            return Array.isArray(list) ? list.map(sanitizeRecord) : [];
         }
 
         function isWinRecord(record) {

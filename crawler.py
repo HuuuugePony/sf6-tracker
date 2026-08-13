@@ -369,6 +369,10 @@ class SF6BattleLogCrawler:
         if not league_rank or league_rank == 0:
             return '-'
         
+        # 官方API可能返回 null（如休闲赛/未定级记录），防止渲染出 "None积分"/"M阶None"
+        if lp is None:
+            return '-'
+        
         if league_rank >= 36:
             # Master及以上，显示Master段位内的积分
             return f'M阶{lp}'
@@ -384,29 +388,29 @@ class SF6BattleLogCrawler:
         """
         battle = {}
         
-        # 基本信息
-        battle['replay_id'] = replay_data.get('replay_id', '')
-        battle['uploaded_at'] = replay_data.get('uploaded_at', 0)
-        battle['views'] = replay_data.get('views', 0)
-        battle['battle_type'] = replay_data.get('replay_battle_type_name', '')
-        battle['battle_sub_type'] = replay_data.get('replay_battle_sub_type_name', '')
+        # 基本信息（官方API字段可能为 null，统一用 or 兜底，防止 None 泄漏到前端显示为 "None"）
+        battle['replay_id'] = replay_data.get('replay_id') or ''
+        battle['uploaded_at'] = replay_data.get('uploaded_at') or 0
+        battle['views'] = replay_data.get('views') or 0
+        battle['battle_type'] = replay_data.get('replay_battle_type_name') or ''
+        battle['battle_sub_type'] = replay_data.get('replay_battle_sub_type_name') or ''
         
         # 玩家1信息
-        p1_info = replay_data.get('player1_info', {})
-        p1_player = p1_info.get('player', {})
-        p1_character_id = p1_info.get('playing_character_id', 0)
-        p1_character_tool = p1_info.get('playing_character_tool_name', '')
-        p1_lp = p1_info.get('league_point', 0)
-        p1_master_rating = p1_info.get('master_rating', 0)  # Master段位分
-        p1_league_rank = p1_info.get('league_rank', 0)
-        p1_input_type = p1_info.get('battle_input_type_name', '')
+        p1_info = replay_data.get('player1_info') or {}
+        p1_player = p1_info.get('player') or {}
+        p1_character_id = p1_info.get('playing_character_id') or 0
+        p1_character_tool = p1_info.get('playing_character_tool_name') or ''
+        p1_lp = p1_info.get('league_point') or 0
+        p1_master_rating = p1_info.get('master_rating') or 0  # Master段位分
+        p1_league_rank = p1_info.get('league_rank') or 0
+        p1_input_type = p1_info.get('battle_input_type_name') or ''
         
         battle['player1'] = {
-            'name': p1_player.get('fighter_id', ''),
-            'short_id': p1_player.get('short_id', 0),
-            'platform': p1_player.get('platform_name', ''),
-            'platform_id': p1_player.get('platform_id', 0),
-            'character': p1_info.get('playing_character_name', ''),
+            'name': p1_player.get('fighter_id') or '',
+            'short_id': p1_player.get('short_id') or 0,
+            'platform': p1_player.get('platform_name') or '',
+            'platform_id': p1_player.get('platform_id') or 0,
+            'character': p1_info.get('playing_character_name') or '',
             'character_tool_name': p1_character_tool,
             'character_id': p1_character_id,
             'character_image': self._get_character_image_url(p1_character_id, p1_character_tool, 1),
@@ -415,25 +419,25 @@ class SF6BattleLogCrawler:
             'league_rank': p1_league_rank,
             'league_rank_display': self._format_league_rank(p1_league_rank, p1_master_rating if p1_master_rating else p1_lp),
             'input_type': self._get_input_type_name(p1_input_type),
-            'round_results': p1_info.get('round_results', []),
+            'round_results': p1_info.get('round_results') or [],
         }
         
         # 玩家2信息
-        p2_info = replay_data.get('player2_info', {})
-        p2_player = p2_info.get('player', {})
-        p2_character_id = p2_info.get('playing_character_id', 0)
-        p2_character_tool = p2_info.get('playing_character_tool_name', '')
-        p2_lp = p2_info.get('league_point', 0)
-        p2_master_rating = p2_info.get('master_rating', 0)  # Master段位分
-        p2_league_rank = p2_info.get('league_rank', 0)
-        p2_input_type = p2_info.get('battle_input_type_name', '')
+        p2_info = replay_data.get('player2_info') or {}
+        p2_player = p2_info.get('player') or {}
+        p2_character_id = p2_info.get('playing_character_id') or 0
+        p2_character_tool = p2_info.get('playing_character_tool_name') or ''
+        p2_lp = p2_info.get('league_point') or 0
+        p2_master_rating = p2_info.get('master_rating') or 0  # Master段位分
+        p2_league_rank = p2_info.get('league_rank') or 0
+        p2_input_type = p2_info.get('battle_input_type_name') or ''
         
         battle['player2'] = {
-            'name': p2_player.get('fighter_id', ''),
-            'short_id': p2_player.get('short_id', 0),
-            'platform': p2_player.get('platform_name', ''),
-            'platform_id': p2_player.get('platform_id', 0),
-            'character': p2_info.get('playing_character_name', ''),
+            'name': p2_player.get('fighter_id') or '',
+            'short_id': p2_player.get('short_id') or 0,
+            'platform': p2_player.get('platform_name') or '',
+            'platform_id': p2_player.get('platform_id') or 0,
+            'character': p2_info.get('playing_character_name') or '',
             'character_tool_name': p2_character_tool,
             'character_id': p2_character_id,
             'character_image': self._get_character_image_url(p2_character_id, p2_character_tool, 2),
@@ -442,13 +446,13 @@ class SF6BattleLogCrawler:
             'league_rank': p2_league_rank,
             'league_rank_display': self._format_league_rank(p2_league_rank, p2_master_rating if p2_master_rating else p2_lp),
             'input_type': self._get_input_type_name(p2_input_type),
-            'round_results': p2_info.get('round_results', []),
+            'round_results': p2_info.get('round_results') or [],
         }
         
         # 判断胜负（根据round_results中非0值的个数）
         # round_results中非0表示该局获胜，统计获胜局数
-        p1_wins = sum(1 for r in p1_info.get('round_results', []) if r != 0)
-        p2_wins = sum(1 for r in p2_info.get('round_results', []) if r != 0)
+        p1_wins = sum(1 for r in (p1_info.get('round_results') or []) if r != 0)
+        p2_wins = sum(1 for r in (p2_info.get('round_results') or []) if r != 0)
         battle['player1']['result'] = 'WIN' if p1_wins > p2_wins else 'LOSE'
         battle['player2']['result'] = 'WIN' if p2_wins > p1_wins else 'LOSE'
         
@@ -490,15 +494,15 @@ class SF6BattleLogCrawler:
         try:
             page_props = json_data.get('pageProps', {})
             
-            # 提取用户信息
-            fighter_info = page_props.get('fighter_banner_info', {})
-            personal_info = fighter_info.get('personal_info', {})
+            # 提取用户信息（字段可能为 null，用 or 兜底，防止 str(None) 产生 "None" 字符串）
+            fighter_info = page_props.get('fighter_banner_info') or {}
+            personal_info = fighter_info.get('personal_info') or {}
             user_info = {
-                'player_name': personal_info.get('fighter_id', ''),
-                'user_id': str(personal_info.get('short_id', '')),
-                'platform': personal_info.get('platform_name', ''),
-                'favorite_character': fighter_info.get('favorite_character_name', ''),
-                'home_name': fighter_info.get('home_name', ''),
+                'player_name': personal_info.get('fighter_id') or '',
+                'user_id': str(personal_info.get('short_id') or ''),
+                'platform': personal_info.get('platform_name') or '',
+                'favorite_character': fighter_info.get('favorite_character_name') or '',
+                'home_name': fighter_info.get('home_name') or '',
             }
             
             # 提取玩家SID（用户码）
@@ -558,8 +562,20 @@ class SF6BattleLogCrawler:
         start_time = time.time()
         rows = []
         for battle in all_battles:
-            # 判断目标玩家是 p1 还是 p2
-            if battle['player1']['name'] == self.player_name:
+            # 判断目标玩家是 p1 还是 p2：优先用 short_id 与当前查询ID匹配（更可靠），
+            # 名字匹配作为兜底（player_name 未设置或同名玩家时避免己方/对方错位）
+            target_sid = str(self.user_id) if self.user_id else ''
+            p1_sid = str(battle['player1'].get('short_id') or '')
+            p2_sid = str(battle['player2'].get('short_id') or '')
+            if target_sid and p1_sid == target_sid:
+                me = battle['player1']
+                opponent = battle['player2']
+                my_side = 1
+            elif target_sid and p2_sid == target_sid:
+                me = battle['player2']
+                opponent = battle['player1']
+                my_side = 2
+            elif self.player_name and battle['player1']['name'] == self.player_name:
                 me = battle['player1']
                 opponent = battle['player2']
                 my_side = 1
@@ -583,13 +599,13 @@ class SF6BattleLogCrawler:
                 'my_league_rank': me.get('league_rank_display', '-'),  # 使用格式化后的段位显示
                 'my_platform': me['platform'],
                 'my_short_id': me.get('short_id', 0),
-                'my_user_id': str(me.get('short_id', '')),  # 用于查询的用户ID（short_id）
+                'my_user_id': str(me.get('short_id') or ''),  # 用于查询的用户ID（short_id）；None 时置空避免前端显示/查询 "None"
                 'my_input_type': me.get('input_type', ''),  # 已经是翻译后的中文
                 'my_round_results': self._format_round_results(me.get('round_results', [])),  # 格式化回合结果
                 'my_round_results_raw': me.get('round_results', []),  # 原始回合结果数组（0=负，1-8=不同胜法，对应官方icon_result{n}图标）
                 'opponent_name': opponent['name'],
                 'opponent_short_id': opponent.get('short_id', 0),
-                'opponent_user_id': str(opponent.get('short_id', '')),  # 对手用于查询的用户ID（short_id）
+                'opponent_user_id': str(opponent.get('short_id') or ''),  # 对手用于查询的用户ID（short_id）
                 'opponent_platform': opponent['platform'],
                 'opponent_character': opponent['character'],
                 'opponent_character_id': opponent.get('character_id', 0),

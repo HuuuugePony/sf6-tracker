@@ -2,7 +2,7 @@
 SF6 Tracker - FastAPI Web Service
 简单的街霸6对战记录爬虫 API 服务
 """
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -27,6 +27,18 @@ app = FastAPI(
     description="街霸6对战记录API",
     version="1.0.0"
 )
+
+# 前端静态资源禁用缓存：pywebview(WebView2)会长期缓存 styles.css/app.js，
+# 导致新旧资源混用（新JS+旧CSS）出现图片无尺寸约束、布局错乱
+@app.middleware("http")
+async def no_cache_web_assets(request: Request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith('/web/'):
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+    return response
+
 
 # 挂载静态文件目录（使用资源路径）
 app.mount("/static", StaticFiles(directory=RESOURCE_PATH), name="static")
@@ -882,9 +894,9 @@ def search_fighter_by_name(request: SearchFighterRequest):
         if response.status_code == 403 or common.get('statusCode') == 403:
             raise HTTPException(status_code=403, detail="搜索需要登录后才能使用，请先登录")
 
-        # 提取搜索结果列表
+        # 提取搜索结果列表（官方实际返回键为 fighter_banner_list）
         fighter_list = []
-        search_keys = ('search_result_list', 'fighter_list', 'result_list', 'list')
+        search_keys = ('fighter_banner_list', 'search_result_list', 'fighter_list', 'result_list', 'list')
         for key in search_keys:
             if isinstance(page_props.get(key), list):
                 fighter_list = page_props[key]

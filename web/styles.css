@@ -1910,6 +1910,33 @@
             overflow-y: auto;
         }
         
+        /* 搜索结果计数提示：紧凑靠左，不用 empty-hint 的大占位 */
+        .search-count-hint {
+            padding: 2px 12px;
+            font-size: 11px;
+            color: #888888;
+            text-align: left;
+        }
+        
+        /* 查询页轻量内联提示：替代已删除的 queryStatus 大框，无边框无背景 */
+        .query-inline-hint {
+            padding: 4px 12px 0;
+            font-size: 11px;
+            color: #999999;
+        }
+        
+        .query-inline-hint.error {
+            color: #f87171;
+        }
+        
+        .query-inline-hint.success {
+            color: #4ade80;
+        }
+        
+        .query-inline-hint.info {
+            color: #67e8f9;
+        }
+        
         .search-result-item {
             display: flex;
             align-items: center;
@@ -2352,8 +2379,8 @@
         }
         
         .ranking-card-rankicon img {
-            width: 100%;
-            height: 100%;
+            width: 90px;
+            height: 90px;
             object-fit: cover;
             object-position: center;
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
@@ -2588,14 +2615,27 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 15px;
+            flex-wrap: nowrap;
+            gap: 10px;
             padding: 15px;
         }
         
+        /* 各子项不换行不压缩，保证分页栏单行展示 */
+        .ranking-pagination > * {
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+        
         .ranking-page-btn {
+            /* 强制钉死50px：上一页/下一页/跳转按钮与页码输入框严格等宽 */
+            flex: 0 0 50px;
+            width: 50px;
+            min-width: 50px;
+            max-width: 50px;
             height: 30px;
             box-sizing: border-box;
-            padding: 0 14px;
+            padding: 0;
+            text-align: center;
             font-size: 13px;
             background: rgba(255,255,255,0.04);
             color: #cccccc;
@@ -2621,18 +2661,23 @@
             font-size: 13px;
         }
         
-        /* 排行榜页码跳转输入框 */
+        /* 排行榜页码跳转输入框：外层span包含输入框+跳转按钮两个控件，自身宽度≈106px属正常 */
         .ranking-page-jump {
             display: inline-flex;
             align-items: center;
             gap: 6px;
+            flex: 0 0 auto;
         }
         
         .ranking-page-input {
-            width: 64px;
+            /* 与按钮同样钉死50px，覆盖输入框固有尺寸 */
+            flex: 0 0 50px;
+            width: 50px;
+            min-width: 50px;
+            max-width: 50px;
             height: 30px;
             box-sizing: border-box;
-            padding: 0 8px;
+            padding: 0;
             font-size: 13px;
             background: rgba(255,255,255,0.04);
             color: #cccccc;
@@ -2640,7 +2685,16 @@
             border-radius: 6px;
             outline: none;
             text-align: center;
+            /* 去掉数字输入框右侧上下箭头 */
+            appearance: textfield;
+            -moz-appearance: textfield;
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .ranking-page-input::-webkit-inner-spin-button,
+        .ranking-page-input::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
         }
         
         .ranking-page-input:focus {
@@ -2807,6 +2861,62 @@
             left: -10px;
             width: calc(100% + 10px);
         }
+        
+        /* 名字搜索结果卡片：右侧官方风格状态区（国旗/活跃时间带/在线状态） */
+        .search-card-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+            margin-right: 4px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .search-card-status img {
+            width: 90px;
+            height: 90px;
+            /* 官方段位图四周透明边较多，cover裁剪透明区使图标更大更醒目 */
+            object-fit: cover;
+            object-position: center;
+            flex-shrink: 0;
+        }
+        
+        /* 状态区段位图90px，搜索卡片加高适配 */
+        .search-fighter-card {
+            height: 94px;
+        }
+        
+        .search-card-time {
+            font-size: 10px;
+            color: #999999;
+            white-space: nowrap;
+        }
+        
+        /* 左侧信息行内的国旗小图 */
+        .search-card-flag,
+        .ranking-card-flag {
+            width: 18px;
+            height: 12px;
+            object-fit: cover;
+            border-radius: 2px;
+            flex-shrink: 0;
+            align-self: center;
+        }
+        
+        .search-card-score {
+            color: #cccccc;
+            font-size: 10px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        
+        /* 底图之上状态区文字加阴影保证可读 */
+        .search-fighter-card.has-emblem .search-card-time { color: #dddddd; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+        .search-fighter-card.has-emblem .search-card-score { color: #ffffff; text-shadow: 0 1px 3px rgba(0,0,0,0.9); }
+        
+        body.light-theme .search-card-time { color: #777777; }
+        body.light-theme .search-card-score { color: #444444; }
         
         /* ==================== 设置面板样式 ==================== */
         .settings-panel {
