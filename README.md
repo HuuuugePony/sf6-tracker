@@ -57,7 +57,7 @@ SF6 Tracker 是一款专为《街头霸王6》玩家打造的战绩追踪工具�
 
 ## 🏁 FINAL ROUND — 安装
 
-直接下载已发布的版本 [SF6-Tracker.exe](https://github.com/HuuuugePony/sf6-tracker/releases/download/v0.5/SF6-Tracker-v0.5.exe)
+直接下载已发布的版本 [SF6-Tracker.exe](https://github.com/HuuuugePony/sf6-tracker/releases/download/v0.5/SF6-Tracker-v0.6.exe)
 
 ---
 
