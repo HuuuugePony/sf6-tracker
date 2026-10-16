@@ -5,9 +5,9 @@ from unittest.mock import Mock, patch
 
 from fastapi.testclient import TestClient
 import main
-import player_analytics as analytics
-from crawler import SF6BattleLogCrawler
-from history_store import clean_profile
+from sf6_tracker import player_analytics as analytics
+from sf6_tracker.crawler import SF6BattleLogCrawler
+from sf6_tracker.history_store import clean_profile
 
 
 def ranked(uid, rank, tool='chunli', character_id=4, rating=2000):

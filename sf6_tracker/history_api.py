@@ -1,7 +1,7 @@
 """Local archive routes, independent of official API authentication."""
 import threading
 from fastapi import APIRouter, HTTPException, Query
-from history_store import HistoryStore, data_directory
+from .history_store import HistoryStore, data_directory
 
 router = APIRouter(prefix='/api/history', tags=['local history'])
 _store = None

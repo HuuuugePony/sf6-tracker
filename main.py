@@ -17,11 +17,12 @@ from urllib.parse import urlsplit
 from contextlib import asynccontextmanager, suppress
 from uuid import UUID
 
-from crawler import SF6BattleLogCrawler
-from login_sessions import LoginSessions, SessionUnavailable
-from history_api import router as history_router, archive_result
-from collection_stream import collection_cancelled, collection_progress, stream_collection
-from player_analytics import elite_benchmark, ladder_analysis, unique_ranked_entries
+from sf6_tracker.crawler import SF6BattleLogCrawler
+from sf6_tracker.login_sessions import LoginSessions, SessionUnavailable
+from sf6_tracker.history_api import router as history_router, archive_result
+from sf6_tracker.collection_stream import collection_cancelled, collection_progress, stream_collection
+from sf6_tracker.player_analytics import elite_benchmark, ladder_analysis, unique_ranked_entries
+from sf6_tracker.paths import runtime_directory
 
 login_sessions = LoginSessions()
 OFFICIAL_LOGIN_URL = 'https://www.streetfighter.com/6/buckler/zh-hans'
@@ -1024,10 +1025,8 @@ CHARACTERS_CACHE_TTL = 24 * 3600  # 缓存24小时
 
 
 def get_writable_path():
-    """获取可写目录（打包后为exe所在目录，开发时为项目目录）"""
-    if getattr(sys, 'frozen', False):
-        return os.path.dirname(sys.executable)
-    return os.path.dirname(os.path.abspath(__file__))
+    """Keep generated cache files in runtime/, never beside source files."""
+    return str(runtime_directory())
 
 
 CHARACTERS_CACHE_FILE = os.path.join(get_writable_path(), 'characters_cache.json')

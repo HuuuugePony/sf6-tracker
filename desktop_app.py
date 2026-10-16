@@ -11,6 +11,7 @@ import socket
 import uuid
 import json
 import html
+from sf6_tracker.paths import runtime_directory
 
 # PyInstaller 打包后的资源路径
 # frozen 模式下，_MEIPASS 指向临时解压目录
@@ -34,7 +35,7 @@ resource_path = get_resource_path()
 os.chdir(application_path)
 
 # 日志文件路径（用于在无控制台模式下记录错误）
-LOG_FILE = os.path.join(application_path, 'sf6tracker.log')
+LOG_FILE = str(runtime_directory() / 'sf6tracker.log')
 
 def log_error(msg):
     """写入错误日志"""
@@ -104,7 +105,7 @@ def start_server(handle):
 
 def load_desktop_styles(window):
     """加载桌面端专用样式"""
-    css_path = os.path.join(resource_path, 'desktop_styles.css')
+    css_path = os.path.join(resource_path, 'web', 'desktop_styles.css')
     if os.path.exists(css_path):
         with open(css_path, 'r', encoding='utf-8') as f:
             css_content = f.read()

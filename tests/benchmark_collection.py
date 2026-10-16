@@ -11,7 +11,7 @@ from statistics import median
 import threading
 import time
 
-from crawler import SF6BattleLogCrawler
+from sf6_tracker.crawler import SF6BattleLogCrawler
 
 
 def fixture(empty=False, fail_first=()):

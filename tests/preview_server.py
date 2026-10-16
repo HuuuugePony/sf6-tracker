@@ -11,9 +11,9 @@ import pandas as pd
 from fastapi.responses import HTMLResponse, FileResponse
 import uvicorn
 import main
-import history_api
-from history_store import HistoryStore
-from crawler import SF6BattleLogCrawler
+from sf6_tracker import history_api
+from sf6_tracker.history_store import HistoryStore
+from sf6_tracker.crawler import SF6BattleLogCrawler
 
 
 class PreviewCrawler(SF6BattleLogCrawler):
@@ -149,7 +149,7 @@ if __name__ == '__main__':
             document.addEventListener('DOMContentLoaded', () => {
                 loadLoginState=()=>false; saveLoginState=()=>{}; loadCharacterRoster=()=>{};
             });</script>'''
-            css_version = (Path(main.RESOURCE_PATH) / 'desktop_styles.css').stat().st_mtime_ns
+            css_version = (Path(main.RESOURCE_PATH) / 'web' / 'desktop_styles.css').stat().st_mtime_ns
             return text.replace('</head>', f'<link rel="stylesheet" href="/preview/desktop.css?v={css_version}">' + setup + '</head>')
 
         @main.app.middleware('http')
@@ -189,6 +189,6 @@ if __name__ == '__main__':
 
         @main.app.get('/preview/desktop.css')
         def desktop_css():
-            return FileResponse(Path(main.RESOURCE_PATH) / 'desktop_styles.css', headers={'Cache-Control': 'no-store'})
+            return FileResponse(Path(main.RESOURCE_PATH) / 'web' / 'desktop_styles.css', headers={'Cache-Control': 'no-store'})
 
         uvicorn.run(main.app, host='127.0.0.1', port=7650, log_level='error')

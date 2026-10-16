@@ -18,7 +18,7 @@ dist/
 build/
 # 测试目录默认忽略私人资料，仅允许已知回归代码与说明
 tests/*
-!tests/README.md
+!tests/__init__.py
 !tests/test_history.py
 !tests/test_login_sessions.py
 !tests/test_reliability.py
@@ -33,6 +33,7 @@ tests/*
 /characters_cache.json
 /player_info.json
 /ranking_debug.json
+/runtime/
 *.sqlite3
 *.sqlite3-wal
 *.sqlite3-shm

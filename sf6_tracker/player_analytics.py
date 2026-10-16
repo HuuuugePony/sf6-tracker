@@ -7,7 +7,7 @@ import threading
 import time
 from urllib.parse import urlencode
 
-from history_store import clean_profile
+from .history_store import clean_profile
 
 
 def number(value):

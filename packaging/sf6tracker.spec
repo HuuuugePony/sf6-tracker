@@ -1,14 +1,16 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+from pathlib import Path
+
+project_root = Path(SPECPATH).resolve().parent
 block_cipher = None
 
 a = Analysis(
-    ['desktop_app.py'],
-    pathex=[],
+    [str(project_root / 'desktop_app.py')],
+    pathex=[str(project_root)],
     binaries=[],
     datas=[
-        ('web', 'web'),
-        ('desktop_styles.css', '.'),
+        (str(project_root / 'web'), 'web'),
     ],
     hiddenimports=[
         'uvicorn',
@@ -68,5 +70,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='chunli.ico',
+    icon=str(project_root / 'assets' / 'chunli.ico'),
 )

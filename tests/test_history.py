@@ -11,8 +11,8 @@ from unittest.mock import Mock, patch
 
 from fastapi.testclient import TestClient
 import main
-import history_api
-from history_store import HistoryStore
+from sf6_tracker import history_api
+from sf6_tracker.history_store import HistoryStore
 from desktop_app import ExportBridge
 
 

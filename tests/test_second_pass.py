@@ -10,9 +10,9 @@ from fastapi.testclient import TestClient
 
 import desktop_app
 import main
-from battle_data import BattlePageError, parse_battle_page
-from crawler import SF6BattleLogCrawler
-from login_sessions import LoginSessions
+from sf6_tracker.battle_data import BattlePageError, parse_battle_page
+from sf6_tracker.crawler import SF6BattleLogCrawler
+from sf6_tracker.login_sessions import LoginSessions
 
 
 def replay(replay_id='ABC'):
@@ -46,7 +46,7 @@ class ParsingTests(unittest.TestCase):
 
     def test_structural_failure_is_not_reported_as_complete(self):
         instance = self.instance({'pageProps': {}})
-        with patch('crawler.time.sleep'), self.assertRaises(RuntimeError):
+        with patch('sf6_tracker.crawler.time.sleep'), self.assertRaises(RuntimeError):
             instance.crawl(pages=1, max_workers=1)
         self.assertEqual(instance.collection_status['parse_failed_pages'], [1])
 
@@ -94,7 +94,7 @@ class ParsingTests(unittest.TestCase):
             rendezvous.wait(timeout=3)
             return {'pageProps': {'replay_list': [replay(str(page))]}}
         instance.fetch_page = retry
-        with patch('crawler.time.sleep') as sleep:
+        with patch('sf6_tracker.crawler.time.sleep') as sleep:
             result = instance.crawl(pages=3, max_workers=3)
         sleep.assert_not_called()
         self.assertEqual(len(result), 3)
@@ -114,7 +114,7 @@ class ParsingTests(unittest.TestCase):
     def test_incomplete_profile_is_not_reported_as_success(self):
         instance = self.instance({'pageProps': {'replay_list': []}})
         instance.fetch_profile_page = Mock(return_value={'pageProps': {}})
-        with patch('crawler.time.sleep'):
+        with patch('sf6_tracker.crawler.time.sleep'):
             instance.crawl(pages=1, max_workers=1, fetch_profile=True)
         self.assertFalse(instance.collection_status['profile_complete'])
         self.assertEqual(instance.player_profile, {})
@@ -216,7 +216,7 @@ class CollectionStreamTests(unittest.TestCase):
             self.assertEqual(main.ranking_stats_cache, {})
 
     def test_stream_contains_progress_and_final_archive_result(self):
-        from collection_stream import collection_progress
+        from sf6_tracker.collection_stream import collection_progress
         fake = Mock(user_id='123', player_name='One', player_profile={},
                     collection_status={'complete': True, 'profile_complete': True})
         def query(**kwargs):

@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import Mock
 
-from login_sessions import LoginSessions, SessionUnavailable
+from sf6_tracker.login_sessions import LoginSessions, SessionUnavailable
 
 
 class LoginSessionTests(unittest.TestCase):

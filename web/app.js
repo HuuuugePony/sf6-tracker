@@ -1,4 +1,4 @@
-// Bootstrap and navigation. See frontend-architecture.md for module contracts.
+// Bootstrap and navigation. See README.md (architecture) for module contracts.
 // 路由处理 - 根据URL路径和参数显示不同页面
 function handleRoute(shouldRefreshHome = false) {
     closePlayerInsights();

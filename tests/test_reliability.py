@@ -8,8 +8,8 @@ import pandas as pd
 from fastapi.testclient import TestClient
 
 import main
-import crawler as crawler_module
-from crawler import SF6BattleLogCrawler
+from sf6_tracker import crawler as crawler_module
+from sf6_tracker.crawler import SF6BattleLogCrawler
 
 
 class ApiReliabilityTests(unittest.TestCase):
@@ -50,7 +50,7 @@ class ApiReliabilityTests(unittest.TestCase):
         for filename, expected in [('web/state.js', f"const APP_VERSION = '{version}';"),
                                    ('web/index.html', f'>{version}</span>'),
                                    ('desktop_app.py', f"title='SF6 Tracker {version}'"),
-                                   ('sf6tracker.spec', f"name='SF6-Tracker-{version}'")]:
+                                   ('packaging/sf6tracker.spec', f"name='SF6-Tracker-{version}'")]:
             with self.subTest(filename=filename):
                 self.assertIn(expected, (root / filename).read_text(encoding='utf-8'))
 
@@ -59,6 +59,62 @@ class ApiReliabilityTests(unittest.TestCase):
         for path in ('/notes', '/notes/?opponent=10&character=4', '/web/matchup-notes.js'):
             with self.subTest(path=path):
                 self.assertEqual(self.client.get(path).status_code, 200)
+
+    def test_reorganized_assets_and_private_paths(self):
+        from pathlib import Path
+        root = Path(main.RESOURCE_PATH)
+        for path in ('web/desktop_styles.css', 'assets/chunli.ico', 'assets/screenshots/overview.png'):
+            self.assertTrue((root / path).is_file(), path)
+        self.assertEqual(self.client.get('/web/desktop_styles.css').status_code, 200)
+        for path in ('/static/runtime/player_info.json', '/static/sf6_tracker/crawler.py',
+                     '/static/packaging/sf6tracker.spec'):
+            self.assertEqual(self.client.get(path).status_code, 404)
+
+    def test_packaging_resolves_paths_from_its_own_directory(self):
+        from pathlib import Path
+        from types import SimpleNamespace
+        import runpy
+        root = Path(main.RESOURCE_PATH)
+        analysis = Mock(return_value=SimpleNamespace(pure=[], zipped_data=[], scripts=[], binaries=[], zipfiles=[], datas=[]))
+        exe = Mock()
+        runpy.run_path(str(root / 'packaging/sf6tracker.spec'), init_globals={
+            'SPECPATH': str(root / 'packaging'), 'Analysis': analysis, 'PYZ': Mock(), 'EXE': exe})
+        self.assertEqual(analysis.call_args.args[0], [str(root / 'desktop_app.py')])
+        self.assertEqual(analysis.call_args.kwargs['pathex'], [str(root)])
+        self.assertEqual(analysis.call_args.kwargs['datas'], [(str(root / 'web'), 'web')])
+        self.assertEqual(exe.call_args.kwargs['icon'], str(root / 'assets/chunli.ico'))
+
+    def test_readme_is_the_single_document_entry_and_local_links_resolve(self):
+        from pathlib import Path
+        import re
+        root = Path(main.RESOURCE_PATH)
+        text = (root / 'README.md').read_text(encoding='utf-8')
+        for old in ('CONTRIBUTING.md', 'analytics-design.md', 'collection-performance.md',
+                    'frontend-architecture.md', 'login-reliability.md', 'matchup-notes.md',
+                    'player_info_schema.md', 'tests/README.md'):
+            self.assertFalse((root / old).exists(), old)
+        for link in re.findall(r'\]\(([^)]+)\)', text):
+            if link.startswith(('https://', 'http://', '#')):
+                continue
+            self.assertTrue((root / link).exists(), link)
+        for anchor in ('usage', 'development', 'structure', 'privacy', 'verification', 'contributing',
+                       'architecture', 'collection-technical', 'analytics-technical', 'login-technical',
+                       'notes-technical', 'test-technical', 'schema-reference'):
+            self.assertIn(f'id="{anchor}"', text)
+
+    def test_runtime_path_override_and_frozen_directory_do_not_write_into_source(self):
+        import os
+        import tempfile
+        from pathlib import Path
+        from sf6_tracker.paths import runtime_directory
+        with tempfile.TemporaryDirectory() as temp:
+            target = Path(temp) / 'custom'
+            with patch.dict(os.environ, {'SF6_TRACKER_RUNTIME_DIR': str(target)}):
+                self.assertEqual(runtime_directory(), target)
+                self.assertTrue(target.is_dir())
+            with patch.dict(os.environ), patch('sys.frozen', True, create=True), patch('sys.executable', str(Path(temp) / 'app.exe')):
+                os.environ.pop('SF6_TRACKER_RUNTIME_DIR', None)
+                self.assertEqual(runtime_directory(), Path(temp) / 'runtime')
 
     def test_invalid_queries_are_rejected_before_network_access(self):
         for params in ({'pages': 0}, {'pages': 51}, {'max_workers': 100},
@@ -146,7 +202,7 @@ class CollectionTests(unittest.TestCase):
 
     def test_partial_failure_is_reported_by_both_entry_points(self):
         for method in ('query_player', 'crawl'):
-            with self.subTest(method=method), patch('crawler.time.sleep'):
+            with self.subTest(method=method), patch('sf6_tracker.crawler.time.sleep'):
                 instance = self.make_crawler({2})
                 kwargs = {'user_id': '123'} if method == 'query_player' else {}
                 getattr(instance, method)(pages=3, max_workers=2, fetch_profile=False, **kwargs)
@@ -156,14 +212,14 @@ class CollectionTests(unittest.TestCase):
                 self.assertEqual(instance.collection_status['failed_pages'], [2])
 
     def test_all_pages_failing_is_an_error(self):
-        with patch('crawler.time.sleep'):
+        with patch('sf6_tracker.crawler.time.sleep'):
             with self.assertRaisesRegex(RuntimeError, '所有战绩页'):
                 self.make_crawler({1, 2}).crawl(pages=2, max_workers=1)
 
     def test_retry_recovery_clears_failure_marker(self):
         instance = self.make_crawler(set())
         instance.fetch_page_with_info = lambda page, battle_type: (page, None, 'first attempt failed')
-        with patch('crawler.time.sleep'):
+        with patch('sf6_tracker.crawler.time.sleep'):
             instance.crawl(pages=2, max_workers=1)
         self.assertTrue(instance.collection_status['complete'])
 

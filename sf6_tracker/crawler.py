@@ -9,7 +9,7 @@ import math
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from urllib3.exceptions import MaxRetryError
-from battle_data import BattlePageError, BattleAuthenticationError, parse_battle_page, player_identity, page_props
+from .battle_data import BattlePageError, BattleAuthenticationError, parse_battle_page, player_identity, page_props
 
 # 配置日志（关闭DEBUG）
 logging.basicConfig(
