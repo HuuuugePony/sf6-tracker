@@ -64,7 +64,7 @@ function selectHistoryPlayer(playerId) {
 async function updateHistoryData() {
     if (!isHistoryMode || !historyState.playerId || historyState.updating || historyState.loading) return;
     if (!cookie || !isLoggedIn) {
-        historyState.message = '更新数据需要联网登录；登录后再次点击“更新数据”。';
+        historyState.message = '更新需要联网登录；登录后再次点击“更新”。';
         renderContent();
         showLoginModal();
         return;
@@ -157,5 +157,5 @@ function renderHistoryControls() {
             : '离线查看已保存的玩家资料与战绩'}</span>
         <button type="button" class="refresh-btn history-update-btn" onclick="updateHistoryData()"
             ${!historyState.playerId || historyState.loading || historyState.updating ? 'disabled' : ''}
-            title="联网获取当前玩家的近期战绩与资料，合并保存到本地">${historyState.updating ? '更新中…' : '更新数据'}</button></div>`;
+            title="联网获取当前玩家的近期战绩与资料，合并保存到本地">${historyState.updating ? '更新中…' : '更新'}</button></div>`;
 }
