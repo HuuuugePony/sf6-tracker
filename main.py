@@ -5,12 +5,45 @@ SF6 Tracker - FastAPI Web Service
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, FileResponse, Response
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from typing import Literal
 import time
 import os
 import sys
+import asyncio
+import threading
+import webbrowser
+from urllib.parse import urlsplit
+from contextlib import asynccontextmanager, suppress
+from uuid import UUID
 
-from crawler import SF6BattleLogCrawler
+from sf6_tracker.crawler import SF6BattleLogCrawler
+from sf6_tracker.login_sessions import LoginSessions, SessionUnavailable
+from sf6_tracker.history_api import router as history_router, archive_result
+from sf6_tracker.collection_stream import collection_cancelled, collection_progress, stream_collection
+from sf6_tracker.player_analytics import elite_benchmark, ladder_analysis, unique_ranked_entries
+from sf6_tracker.paths import runtime_directory
+
+login_sessions = LoginSessions()
+OFFICIAL_LOGIN_URL = 'https://www.streetfighter.com/6/buckler/zh-hans'
+_auth_lock = threading.RLock()
+_auth_generation = 0
+
+
+@asynccontextmanager
+async def lifespan(app):
+    async def reap_sessions():
+        while True:
+            await asyncio.sleep(15)
+            await asyncio.to_thread(login_sessions.expire)
+    reaper = asyncio.create_task(reap_sessions())
+    try:
+        yield
+    finally:
+        reaper.cancel()
+        with suppress(asyncio.CancelledError):
+            await reaper
+        await asyncio.to_thread(login_sessions.close_all)
 
 # 获取资源文件路径（支持 PyInstaller 打包）
 def get_resource_path():
@@ -25,8 +58,10 @@ RESOURCE_PATH = get_resource_path()
 app = FastAPI(
     title="SF6 Battle Log Tracker",
     description="街霸6对战记录API",
-    version="1.0.0"
+    version="0.7.0",
+    lifespan=lifespan
 )
+app.include_router(history_router)
 
 # 前端静态资源禁用缓存：pywebview(WebView2)会长期缓存 styles.css/app.js，
 # 导致新旧资源混用（新JS+旧CSS）出现图片无尺寸约束、布局错乱
@@ -40,34 +75,45 @@ async def no_cache_web_assets(request: Request, call_next):
     return response
 
 
-# 挂载静态文件目录（使用资源路径）
-app.mount("/static", StaticFiles(directory=RESOURCE_PATH), name="static")
+# 仅开放前端资源，不能将源代码、日志和用户数据所在目录作为静态目录。
+app.mount("/static", StaticFiles(directory=os.path.join(RESOURCE_PATH, 'web')), name="static")
 # 挂载 web 前端资源目录（styles.css / app.js 等）
 app.mount("/web", StaticFiles(directory=os.path.join(RESOURCE_PATH, 'web')), name="web")
 
 # 全局变量存储Cookie和用户信息
 stored_cookie = None
-session_data = {}  # 存储会话数据
 user_info = {'user_id': None, 'player_name': None}  # 存储用户信息
-query_crawler = None  # 专门用于查询的爬虫实例
 
 # ==================== 数据模型 ====================爬取失败，请稍后重试
+
+class LoginStartRequest(BaseModel):
+    session_id: UUID | None = None
+
+
+class LoginSessionRequest(BaseModel):
+    session_id: UUID
+
+
+class CookieLoginRequest(BaseModel):
+    cookie: str = Field(min_length=1, max_length=32768)
 
 class CrawlRequest(BaseModel):
     """爬取请求"""
     cookie: str = None  # 可选的cookie参数
-    pages: int = 10
-    max_workers: int = 5
-    battle_type: str = 'all'  # 对战类型: all/rank/casual/custom/hub
+    pages: int = Field(default=10, ge=1, le=50)
+    max_workers: int = Field(default=5, ge=1, le=10)
+    battle_type: Literal['all', 'rank', 'casual', 'custom', 'hub'] = 'all'
+    stream: bool = False
 
 
 class QueryPlayerRequest(BaseModel):
     """查询玩家请求"""
-    user_id: str  # 玩家ID
+    user_id: str = Field(pattern=r'^\d{1,20}$')
     cookie: str = None  # 可选的cookie参数
-    pages: int = 10
-    max_workers: int = 5
-    battle_type: str = 'all'  # 对战类型: all/rank/casual/custom/hub
+    pages: int = Field(default=10, ge=1, le=50)
+    max_workers: int = Field(default=5, ge=1, le=10)
+    battle_type: Literal['all', 'rank', 'casual', 'custom', 'hub'] = 'all'
+    stream: bool = False
 
 
 class RankingRequest(BaseModel):
@@ -106,6 +152,13 @@ class CharactersRequest(BaseModel):
     force_refresh: bool = False  # 是否忽略缓存强制刷新
 
 
+class BenchmarkRequest(BaseModel):
+    character_id: int = Field(ge=1, le=10000)
+    character_tool: str = Field(pattern=r'^[a-z0-9_]{1,32}$')
+    exclude_player_id: str = Field(default='', pattern=r'^[0-9]{0,20}$')
+    cookie: str | None = None
+
+
 class SearchFighterRequest(BaseModel):
     """按名字搜索玩家请求（官方 fighterslist/search API）"""
     fighter_id: str  # 玩家名字（官方API的fighter_id参数实际是名字）
@@ -120,6 +173,11 @@ def home_redirect():
     """根路径重定向到/home"""
     from fastapi.responses import RedirectResponse
     return RedirectResponse(url="/home")
+
+
+@app.get('/api/health')
+def health():
+    return {'app': 'sf6-tracker', 'instance_id': getattr(app.state, 'instance_id', None), 'ready': True}
 
 
 @app.get("/home", response_class=HTMLResponse)
@@ -142,225 +200,186 @@ def search_page(uid: str = None):
     return resp
 
 
-@app.post("/api/login/start")
-def start_login():
-    """开始登录流程 - 打开浏览器"""
+@app.get('/history', response_class=HTMLResponse)
+def history_page():
+    return home()
+
+
+@app.get('/notes', response_class=HTMLResponse)
+@app.get('/notes/', response_class=HTMLResponse)
+def notes_page():
+    return home()
+
+
+def verify_login_cookie(cookie_string):
+    """Verify identity from an authenticated official response, never from page CSS."""
+    crawler = None
     try:
-        from selenium import webdriver
-        from selenium.webdriver.edge.options import Options
-        import uuid
-        
-        # 生成会话ID
-        session_id = str(uuid.uuid4())
-        
-        # 配置Edge选项
-        edge_options = Options()
-        edge_options.add_argument('--no-sandbox')
-        edge_options.add_argument('--disable-dev-shm-usage')
-        # 禁用扩展，加快速度
-        edge_options.add_argument('--disable-extensions')
-        # 禁用GPU加速
-        edge_options.add_argument('--disable-gpu')
-        
-        driver = webdriver.Edge(options=edge_options)
-        
-        # 访问SF6网站
-        login_url = 'https://www.streetfighter.com/6/buckler/zh-hans'
-        driver.get(login_url)
-        
-        # 保存driver到会话数据
-        session_data[session_id] = {
-            'driver': driver
-        }
-        
-        print(f'\n会话ID: {session_id}')
-        print('请在打开的浏览器中完成登录...')
-        print('完成后点击"我已登录，获取Cookie"按钮...\n')
-        
-        return {
-            "success": True,
-            "session_id": session_id,
-            "message": "浏览器已打开，请完成登录"
-        }
-            
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"启动登录失败: {str(e)}")
+        crawler = SF6BattleLogCrawler(cookie=cookie_string)
+        crawler.user_id = '4123104110'  # Existing public profile used only to access common.loginUser.
+        response = crawler._get_data_response(
+            f'{crawler.api_base_url}/{crawler.build_id}/{crawler.lang}/profile/{crawler.user_id}.json?sid={crawler.user_id}',
+            timeout=10)
+        if response.status_code in (401, 403):
+            raise HTTPException(status_code=401, detail="登录信息无效或已过期，请重新登录")
+        if response.status_code != 200:
+            raise HTTPException(status_code=502, detail="官网暂时无法验证登录，请稍后重试")
+        data = response.json()
+        login_user = (data.get('pageProps', {}).get('common') or {}).get('loginUser') or {}
+        uid = str(login_user.get('shortId') or '')
+        if not login_user.get('flg') or not uid.isascii() or not uid.isdigit():
+            raise HTTPException(status_code=401, detail="尚未检测到有效登录")
+        return {'user_id': uid, 'player_name': login_user.get('fighterId') or f'玩家{uid}'}
+    except HTTPException:
+        raise
+    except Exception:
+        # Exception text from HTTP clients may include request information.
+        raise HTTPException(status_code=503, detail="暂时无法连接官网验证登录，请稍后重试")
+    finally:
+        if crawler is not None:
+            crawler.session.close()
+
+
+def _begin_login_generation():
+    global _auth_generation
+    with _auth_lock:
+        _auth_generation += 1
+        return _auth_generation
+
+
+def _commit_login(cookie_string, info, generation):
+    global stored_cookie, user_info, _auth_generation
+    with _auth_lock:
+        if generation != _auth_generation:
+            raise HTTPException(status_code=409, detail="账号状态已变化，请重新登录")
+        stored_cookie = cookie_string
+        user_info = dict(info)
+        _auth_generation += 1
+
+
+@app.post('/api/login/open-official')
+def open_official_login():
+    """Open the fixed official origin, without controlling the user's browser."""
+    try:
+        opened = webbrowser.open(OFFICIAL_LOGIN_URL, new=2)
+    except Exception:
+        opened = False
+    if not opened:
+        raise HTTPException(status_code=503, detail='未能打开默认浏览器，请手动访问官网后导入 Cookie')
+    return {'success': True, 'message': '已请求打开默认浏览器，完成官网登录后请导入 Cookie'}
+
+
+def create_login_driver():
+    from selenium import webdriver
+    from selenium.webdriver.edge.options import Options
+    options = Options()
+    # Do not wait for every third-party resource before giving control to the user.
+    # This is a load strategy, not an attempt to conceal WebDriver or solve CAPTCHA.
+    options.page_load_strategy = 'eager'
+    return webdriver.Edge(options=options)
+
+
+@app.post("/api/login/start")
+def start_login(request: LoginStartRequest = LoginStartRequest()):
+    session_id = None
+    try:
+        session_id = login_sessions.reserve(
+            0, str(request.session_id) if request.session_id else None)
+        # Session -> auth is the same lock order used by complete().
+        with login_sessions.lock:
+            session = login_sessions.sessions.get(session_id)
+            if not session or session.cancelled:
+                raise SessionUnavailable('登录流程已取消')
+            session.generation = _begin_login_generation()
+        driver = create_login_driver()
+        login_sessions.attach(session_id, driver)
+        page_pending = False
+        with login_sessions.claim(session_id) as session:
+            driver.set_page_load_timeout(45)
+            from selenium.common.exceptions import TimeoutException
+            try:
+                driver.get(OFFICIAL_LOGIN_URL)
+            except TimeoutException:
+                # The page / challenge can still be interactive. Do not close it.
+                page_pending = True
+        if session.cancelled:
+            raise SessionUnavailable('登录流程已取消或过期')
+        return {"success": True, "session_id": session_id, "page_pending": page_pending,
+                "message": "页面仍在加载，浏览器已保留；请手动完成验证与登录" if page_pending else "浏览器已打开，请手动完成验证与登录"}
+    except SessionUnavailable as exc:
+        if session_id:
+            login_sessions.cancel(session_id)
+        raise HTTPException(status_code=409, detail=str(exc))
+    except Exception:
+        if session_id:
+            login_sessions.cancel(session_id)
+        raise HTTPException(status_code=500, detail="无法启动登录浏览器，请检查 Edge 安装后重试")
 
 
 @app.post("/api/login/confirm")
-def confirm_login(request: dict):
-    """确认登录并获取Cookie和用户信息"""
-    session_id = request.get('session_id')
-    
-    if not session_id or session_id not in session_data:
-        raise HTTPException(status_code=400, detail="无效的会话ID")
-    
+def confirm_login(request: LoginSessionRequest):
+    session_id = str(request.session_id)
     try:
-        data = session_data[session_id]
-        driver = data['driver']
-        
-        # 获取Cookie
-        cookies = driver.get_cookies()
-        cookie_string = '; '.join([f"{c['name']}={c['value']}" for c in cookies])
-        
-        # 获取页面源码并提取用户信息
-        from bs4 import BeautifulSoup
-        page_source = driver.page_source
-        soup = BeautifulSoup(page_source, 'html.parser')
-        
-        # 查找个人档案链接元素
-        profile_link = soup.select_one('.header_title__ruJj2 a')
-        extracted_user_id = None
-        extracted_player_name = None
-        
-        if profile_link:
-            extracted_player_name = profile_link.get_text(strip=True)
-            href = profile_link.get('href', '')
-            parts = href.split('/')
-            if len(parts) >= 6:
-                extracted_user_id = parts[-1]
-        
-        # 关闭浏览器
-        driver.quit()
-        
-        # 保存到全局变量
-        global stored_cookie, user_info
-        stored_cookie = cookie_string
-        user_info = {
-            'user_id': extracted_user_id,
-            'player_name': extracted_player_name
-        }
-        
-        # 清理会话数据
-        del session_data[session_id]
-        
-        return {
-            "success": True,
-            "cookie": cookie_string,
-            "user_id": extracted_user_id,
-            "player_name": extracted_player_name,
-            "message": "登录成功"
-        }
-            
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"获取信息失败: {str(e)}")
+        with login_sessions.claim(session_id) as session:
+            try:
+                location = urlsplit(session.driver.current_url)
+                cookies = session.driver.get_cookies()
+            except Exception:
+                login_sessions.cancel(session_id)
+                raise HTTPException(status_code=409, detail="登录浏览器已关闭，请重新开始")
+            if (location.scheme != 'https' or location.hostname != 'www.streetfighter.com'
+                    or not (location.path == '/6/buckler' or location.path.startswith('/6/buckler/'))):
+                raise HTTPException(status_code=409, detail='请先完成验证与登录，并返回 Buckler 官网页面后再验证账号；验证反复失败可改用普通浏览器 + Cookie 导入')
+            # Only send Buckler cookies to the Buckler origin.
+            cookies = [c for c in cookies if
+                       str(c.get('domain', '')).lstrip('.') in ('www.streetfighter.com', 'streetfighter.com')]
+            cookie_string = '; '.join(f"{c['name']}={c['value']}" for c in cookies)
+            if not cookie_string:
+                raise HTTPException(status_code=409, detail='尚未取得官网 Cookie，请完成登录后重试，或使用 Cookie 导入')
+            try:
+                info = verify_login_cookie(cookie_string)
+            except HTTPException as exc:
+                if exc.status_code == 401:
+                    raise HTTPException(status_code=409, detail="尚未完成登录，请在浏览器中完成后重试")
+                raise
+            login_sessions.complete(session_id, lambda generation: _commit_login(cookie_string, info, generation))
+        return {"success": True, "cookie": cookie_string, **info, "message": "登录成功"}
+    except SessionUnavailable as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+
+
+@app.post("/api/login/cancel")
+def cancel_login(request: LoginSessionRequest):
+    login_sessions.cancel(str(request.session_id))
+    return {"success": True}
 
 
 @app.post("/api/login/cookie")
-def login_with_cookie(request: dict):
-    """通过Cookie直接登录 - 用固定测试玩家验证有效性，从响应中提取登录用户信息"""
-    global stored_cookie, user_info
-    cookie_string = request.get('cookie', '').strip()
-    
+def login_with_cookie(request: CookieLoginRequest):
+    cookie_string = request.cookie.strip()
     if not cookie_string:
         raise HTTPException(status_code=400, detail="Cookie不能为空")
-    
-    # 固定测试玩家ID，用于验证cookie是否能正常访问API
-    TEST_PLAYER_ID = '4123104110'
-    
-    try:
-        test_crawler = SF6BattleLogCrawler(cookie=cookie_string)
-        test_crawler.user_id = TEST_PLAYER_ID
-        
-        # 查询测试玩家的基本信息
-        url = f'{test_crawler.api_base_url}/{test_crawler.build_id}/{test_crawler.lang}/profile/{TEST_PLAYER_ID}.json?sid={TEST_PLAYER_ID}'
-        response = test_crawler.session.get(url, timeout=10)
-        
-        if response.status_code == 403:
-            raise HTTPException(status_code=401, detail="Cookie无效或已过期（未检测到登录状态），请重新获取")
-        
-        if response.status_code != 200:
-            raise HTTPException(status_code=401, detail=f"Cookie验证失败，状态码: {response.status_code}")
-        
-        data = response.json()
-        page_props = data.get('pageProps', {})
-        
-        # 从common.loginUser中提取登录用户信息
-        common = page_props.get('common', {})
-        login_user = common.get('loginUser') or {}
-        
-        if not login_user.get('flg') or not login_user.get('shortId'):
-            raise HTTPException(status_code=401, detail="Cookie无效或已过期（未检测到登录状态），请重新获取")
-        
-        extracted_user_id = str(login_user.get('shortId'))
-        extracted_player_name = login_user.get('fighterId') or ''
-        
-        print(f'✓ Cookie验证通过: {extracted_player_name}({extracted_user_id})')
-        
-        # 保存到全局变量
-        stored_cookie = cookie_string
-        user_info = {
-            'user_id': extracted_user_id,
-            'player_name': extracted_player_name
-        }
-        
-        return {
-            "success": True,
-            "cookie": cookie_string,
-            "user_id": extracted_user_id,
-            "player_name": extracted_player_name,
-            "message": "Cookie登录成功"
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Cookie已失效（{e}），请重新获取")
+    generation = _begin_login_generation()
+    info = verify_login_cookie(cookie_string)
+    _commit_login(cookie_string, info, generation)
+    login_sessions.close_all()
+    return {"success": True, "cookie": cookie_string, **info, "message": "登录成功"}
 
 
-@app.post("/api/get-cookie")
+@app.post("/api/get-cookie", deprecated=True)
 def get_cookie():
-    """获取Cookie（打开浏览器让用户登录）"""
-    global stored_cookie
-    
-    try:
-        from selenium import webdriver
-        from selenium.webdriver.edge.options import Options
-        
-        # 配置Edge选项
-        edge_options = Options()
-        edge_options.add_argument('--no-sandbox')
-        edge_options.add_argument('--disable-dev-shm-usage')
-        edge_options.add_argument('--disable-extensions')
-        edge_options.add_argument('--disable-gpu')
-        
-        driver = webdriver.Edge(options=edge_options)
-        
-        # 访问SF6网站
-        login_url = 'https://www.streetfighter.com/6/buckler/zh-hans'
-        driver.get(login_url)
-        
-        print('\n请在打开的浏览器中完成登录...')
-        print('完成后点击页面上的任意位置或等待5秒自动继续...\n')
-        
-        # 简单等待用户手动登录（最多等待60秒）
-        for i in range(60):
-            time.sleep(1)
-            # 检查页面是否有变化（简单判断）
-            try:
-                current_url = driver.current_url
-                if 'login' not in current_url.lower() or 'cid.capcom' not in current_url.lower():
-                    print('检测到页面跳转，可能已登录')
-                    break
-            except:
-                pass
-        
-        # 获取Cookie
-        cookies = driver.get_cookies()
-        cookie_string = '; '.join([f"{c['name']}={c['value']}" for c in cookies])
-        
-        # 关闭浏览器
-        driver.quit()
-        
-        stored_cookie = cookie_string
-        
-        return {
-            "success": True,
-            "cookie": cookie_string
-        }
-            
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"获取Cookie失败: {str(e)}")
+    raise HTTPException(status_code=410, detail="请使用登录弹窗完成登录")
+
+
+@app.post("/api/logout")
+def logout():
+    global stored_cookie, user_info, _auth_generation
+    with _auth_lock:
+        _auth_generation += 1
+        stored_cookie = None
+        user_info = {'user_id': None, 'player_name': None}
+    login_sessions.close_all()
+    return {"success": True}
 
 
 @app.post("/api/set-user-info")
@@ -387,6 +406,9 @@ def set_user_info(request: dict):
 @app.post("/api/crawl")
 def crawl_battle_log(request: CrawlRequest):
     """爬取对战记录"""
+    if request.stream:
+        return stream_collection(lambda: crawl_battle_log(request.model_copy(update={'stream': False})))
+    crawler = None
     try:
         # 优先使用请求中的cookie，如果没有则使用全局存储的cookie，最后使用crawler默认cookie
         cookie_to_use = None
@@ -396,8 +418,9 @@ def crawl_battle_log(request: CrawlRequest):
             cookie_to_use = stored_cookie
         # 如果都没有，cookie_to_use保持为None，crawler会使用默认cookie
         
+        current_user = dict(user_info)
         # 检查是否有用户信息
-        if not user_info.get('user_id'):
+        if not current_user.get('user_id'):
             raise HTTPException(status_code=400, detail="未找到用户信息，请重新登录")
         
         # 创建爬虫实例（不需要传入user_id）
@@ -405,16 +428,20 @@ def crawl_battle_log(request: CrawlRequest):
             cookie=cookie_to_use
         )
         # 手动设置用户信息
-        crawler.user_id = user_info['user_id']
-        crawler.player_name = user_info['player_name']
+        crawler.user_id = current_user['user_id']
+        crawler.player_name = current_user['player_name']
+        crawler.progress_callback = collection_progress.get()
+        crawler.cancel_event = collection_cancelled.get()
         
         # 执行爬取（并行获取个人资料）
-        df = crawler.crawl(pages=request.pages, battle_type=request.battle_type, fetch_profile=True)
+        df = crawler.crawl(pages=request.pages, max_workers=request.max_workers,
+                           battle_type=request.battle_type, fetch_profile=True)
         player_profile = crawler.player_profile
         
         # 同步官方返回的最新玩家名（游戏内改名后全局名跟随更新，避免一直显示登录时缓存的旧名）
-        if crawler.player_name:
+        if crawler.player_name and user_info.get('user_id') == current_user['user_id']:
             user_info['player_name'] = crawler.player_name
+        current_user['player_name'] = crawler.player_name or current_user['player_name']
         
         # 转换为字典列表
         data = df.to_dict('records')
@@ -428,18 +455,28 @@ def crawl_battle_log(request: CrawlRequest):
             "success": True,
             "total_records": len(data),
             "data": data,
-            "user_info": user_info,
-            "player_profile": player_profile
+            "user_info": current_user,
+            "player_profile": player_profile,
+            "collection": crawler.collection_status,
+            "history": archive_result(current_user, data,
+                player_profile if crawler.collection_status.get('profile_complete') else None)
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"爬取失败: {str(e)}")
+    finally:
+        if crawler is not None:
+            crawler.session.close()
 
 
 @app.post("/api/query-player")
 def query_player(request: QueryPlayerRequest):
     """查询指定玩家的对战记录"""
-    global query_crawler
+    if request.stream:
+        return stream_collection(lambda: query_player(request.model_copy(update={'stream': False})))
+    query_crawler = None
     
     try:
         # 优先使用请求中的cookie，如果没有则使用全局存储的cookie，最后使用crawler默认cookie
@@ -450,10 +487,10 @@ def query_player(request: QueryPlayerRequest):
             cookie_to_use = stored_cookie
         # 如果都没有，cookie_to_use保持为None，crawler会使用默认cookie
         
-        # 如果查询爬虫不存在或cookie变化，创建新的实例
-        if query_crawler is None or query_crawler.headers.get('cookie') != cookie_to_use:
-            query_crawler = SF6BattleLogCrawler(cookie=cookie_to_use)
-            print(f'✓ 创建新的查询爬虫实例')
+        # 请求独立持有玩家状态。
+        query_crawler = SF6BattleLogCrawler(cookie=cookie_to_use)
+        query_crawler.progress_callback = collection_progress.get()
+        query_crawler.cancel_event = collection_cancelled.get()
         
         # 查询玩家数据（使用优化参数：5并发，并行获取个人资料）
         df = query_crawler.query_player(
@@ -480,17 +517,24 @@ def query_player(request: QueryPlayerRequest):
                 'user_id': query_crawler.user_id,
                 'player_name': query_crawler.player_name or f'玩家{query_crawler.user_id}'
             },
-            "player_profile": query_crawler.player_profile
+            "player_profile": query_crawler.player_profile,
+            "collection": query_crawler.collection_status,
+            "history": archive_result({'user_id': request.user_id,
+                'player_name': query_crawler.player_name or request.user_id}, data,
+                query_crawler.player_profile if query_crawler.collection_status.get('profile_complete') else None)
         }
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"查询失败: {str(e)}")
+    finally:
+        if query_crawler is not None:
+            query_crawler.session.close()
 
 
 @app.post("/api/ranking")
 def get_ranking(request: RankingRequest):
     """获取排行榜数据"""
-    global query_crawler
+    query_crawler = None
     
     try:
         start_time = time.time()
@@ -501,9 +545,8 @@ def get_ranking(request: RankingRequest):
         elif stored_cookie:
             cookie_to_use = stored_cookie
         
-        # 复用查询爬虫实例获取build_id
-        if query_crawler is None or query_crawler.headers.get('cookie') != cookie_to_use:
-            query_crawler = SF6BattleLogCrawler(cookie=cookie_to_use)
+        # 每次请求独立持有客户端，避免并发修改玩家及凭据状态。
+        query_crawler = SF6BattleLogCrawler(cookie=cookie_to_use)
         
         # 构造排行榜API URL
         url = (
@@ -568,6 +611,9 @@ def get_ranking(request: RankingRequest):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取排行榜失败: {str(e)}")
+    finally:
+        if query_crawler is not None:
+            query_crawler.session.close()
 
 
 # ==================== 排行榜数据统计（传奇段位前500聚合） ====================
@@ -586,14 +632,16 @@ def _fetch_ranking_page(crawler, page, home_filter=1):
         f'?character_filter=1&platform=1&home_filter={home_filter}'
         f'&home_category_id={home_category_id}&home_id={home_id}&page={page}&season_type=1'
     )
-    resp = crawler.session.get(url, timeout=10)
-    if resp.status_code != 200:
-        return []
     try:
+        resp = crawler.session.get(url, timeout=10)
+        resp.raise_for_status()
         data = resp.json()
+        ranking = data.get('pageProps', {}).get('master_rating_ranking')
+        if not isinstance(ranking, dict) or not isinstance(ranking.get('ranking_fighter_list'), list):
+            return None
+        return ranking['ranking_fighter_list']
     except Exception:
-        return []
-    return data.get('pageProps', {}).get('master_rating_ranking', {}).get('ranking_fighter_list', []) or []
+        return None
 
 
 @app.post("/api/ranking-stats")
@@ -601,7 +649,7 @@ def get_ranking_stats(request: RankingStatsRequest):
     """排行榜数据统计：聚合全球Master榜前N名（传奇段位）
     返回：1.角色使用情况（数量/占比） 2.MR分段占比 3.角色平均排名
     """
-    global query_crawler
+    query_crawler = None
 
     try:
         start_time = time.time()
@@ -624,8 +672,7 @@ def get_ranking_stats(request: RankingStatsRequest):
         if not cookie_to_use:
             raise HTTPException(status_code=403, detail="排行榜统计需要登录后才能查看，请先登录")
 
-        if query_crawler is None or query_crawler.headers.get('cookie') != cookie_to_use:
-            query_crawler = SF6BattleLogCrawler(cookie=cookie_to_use)
+        query_crawler = SF6BattleLogCrawler(cookie=cookie_to_use)
 
         # 先拉第1页，确认数据可用并获取每页条数
         first_page = _fetch_ranking_page(query_crawler, 1, home_filter)
@@ -638,12 +685,23 @@ def get_ranking_stats(request: RankingStatsRequest):
         players = list(first_page)
         if pages_needed > 1:
             # 并发拉取剩余页
-            from concurrent.futures import ThreadPoolExecutor
+            from concurrent.futures import ThreadPoolExecutor, as_completed
             with ThreadPoolExecutor(max_workers=8) as executor:
-                results = list(executor.map(lambda p: _fetch_ranking_page(query_crawler, p, home_filter), range(2, pages_needed + 1)))
-            for page_list in results:
-                players.extend(page_list)
-        players = players[:top_n]
+                pending = {executor.submit(_fetch_ranking_page, query_crawler, page, home_filter): page
+                           for page in range(2, pages_needed + 1)}
+                results = {}
+                try:
+                    for future in as_completed(pending):
+                        page_list = future.result()
+                        if page_list is None:
+                            raise HTTPException(status_code=502, detail="部分排行榜页面获取失败，统计未完成，请重试")
+                        results[pending[future]] = page_list
+                finally:
+                    for future in pending:
+                        future.cancel()
+            for page in sorted(results):
+                players.extend(results[page])
+        players = unique_ranked_entries(players)[:top_n]
         total = len(players)
 
         # 聚合统计
@@ -667,11 +725,12 @@ def get_ranking_stats(request: RankingStatsRequest):
         for p in players:
             tool = p.get('character_tool_name') or str(p.get('character_id', ''))
             name = p.get('character_name') or tool
-            c = char_map.setdefault(tool, {"tool": tool, "name": name, "count": 0, "rank_sum": 0})
+            c = char_map.setdefault(tool, {"tool": tool, "name": name, "count": 0, "rank_sum": 0, "rank_count": 0})
             c["count"] += 1
             rank = p.get('master_rating_ranking')
             if isinstance(rank, int) and rank > 0:
                 c["rank_sum"] += rank
+                c["rank_count"] += 1
             rating = p.get('rating') or 0
             for b in mr_buckets:
                 if rating >= b["min"]:
@@ -685,10 +744,11 @@ def get_ranking_stats(request: RankingStatsRequest):
             character_usage.append({"tool": c["tool"], "name": c["name"], "count": c["count"], "percent": pct})
             char_avg_rank.append({
                 "tool": c["tool"], "name": c["name"], "count": c["count"],
-                "avg_rank": round(c["rank_sum"] / c["count"], 1) if c["count"] else 0
+                "avg_rank": round(c["rank_sum"] / c["rank_count"], 1) if c["rank_count"] else None,
+                "rank_sample_count": c["rank_count"]
             })
         character_usage.sort(key=lambda x: (-x["count"], x["tool"]))
-        char_avg_rank.sort(key=lambda x: x["avg_rank"])
+        char_avg_rank.sort(key=lambda x: x["avg_rank"] if x["avg_rank"] is not None else float('inf'))
 
         mr_distribution = [
             {"label": b["label"], "count": b["count"], "percent": round(b["count"] * 100.0 / total, 1) if total else 0}
@@ -703,6 +763,7 @@ def get_ranking_stats(request: RankingStatsRequest):
             "character_usage": character_usage,
             "mr_distribution": mr_distribution,
             "char_avg_rank": char_avg_rank,
+            **ladder_analysis(players, top_n),
         }
         ranking_stats_cache[cache_key] = {"data": result, "fetched_at": time.time()}
 
@@ -715,12 +776,29 @@ def get_ranking_stats(request: RankingStatsRequest):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取排行榜统计失败: {str(e)}")
+    finally:
+        if query_crawler is not None:
+            query_crawler.session.close()
+
+
+@app.post('/api/player-benchmark')
+def get_player_benchmark(request: BenchmarkRequest):
+    cookie_to_use = request.cookie or stored_cookie
+    if not cookie_to_use:
+        raise HTTPException(403, '获取高手参考数据需要先登录')
+    try:
+        return elite_benchmark(request.character_id, request.character_tool, request.exclude_player_id,
+                               cookie_to_use, SF6BattleLogCrawler)
+    except ValueError as error:
+        raise HTTPException(502, str(error))
+    except Exception:
+        raise HTTPException(502, '高手参考数据获取失败，请稍后重试')
 
 
 @app.post("/api/fighters-list")
 def get_fighters_list(request: FightersListRequest):
     """获取格斗圈列表数据（朋友/关注/屏蔽）"""
-    global query_crawler
+    query_crawler = None
 
     try:
         start_time = time.time()
@@ -746,9 +824,8 @@ def get_fighters_list(request: FightersListRequest):
         if not cookie_to_use:
             raise HTTPException(status_code=403, detail="格斗圈列表需要登录后才能查看，请先登录")
 
-        # 复用查询爬虫实例，但每次及时刷新build_id（官网发布新版后build_id会变，过期会导致数据异常）
-        if query_crawler is None or query_crawler.headers.get('cookie') != cookie_to_use:
-            query_crawler = SF6BattleLogCrawler(cookie=cookie_to_use)
+        # 每次请求独立持有客户端，避免并发修改玩家及凭据状态。
+        query_crawler = SF6BattleLogCrawler(cookie=cookie_to_use)
         try:
             fresh_build_id = query_crawler.fetch_build_id()
             if fresh_build_id:
@@ -832,12 +909,15 @@ def get_fighters_list(request: FightersListRequest):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取格斗圈列表失败: {str(e)}")
+    finally:
+        if query_crawler is not None:
+            query_crawler.session.close()
 
 
 @app.post("/api/search-fighter")
 def search_fighter_by_name(request: SearchFighterRequest):
     """按名字搜索玩家（代理官方 fighterslist/search/result.json API）"""
-    global query_crawler
+    query_crawler = None
 
     try:
         start_time = time.time()
@@ -855,9 +935,8 @@ def search_fighter_by_name(request: SearchFighterRequest):
         if not cookie_to_use:
             raise HTTPException(status_code=403, detail="搜索玩家需要登录后才能使用，请先登录")
 
-        # 复用爬虫实例
-        if query_crawler is None or query_crawler.headers.get('cookie') != cookie_to_use:
-            query_crawler = SF6BattleLogCrawler(cookie=cookie_to_use)
+        # 每次请求独立持有客户端，避免并发修改玩家及凭据状态。
+        query_crawler = SF6BattleLogCrawler(cookie=cookie_to_use)
         try:
             fresh_build_id = query_crawler.fetch_build_id()
             if fresh_build_id:
@@ -926,6 +1005,9 @@ def search_fighter_by_name(request: SearchFighterRequest):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"搜索玩家失败: {str(e)}")
+    finally:
+        if query_crawler is not None:
+            query_crawler.session.close()
 
 
 # ==================== 角色列表自动更新 ====================
@@ -943,10 +1025,8 @@ CHARACTERS_CACHE_TTL = 24 * 3600  # 缓存24小时
 
 
 def get_writable_path():
-    """获取可写目录（打包后为exe所在目录，开发时为项目目录）"""
-    if getattr(sys, 'frozen', False):
-        return os.path.dirname(sys.executable)
-    return os.path.dirname(os.path.abspath(__file__))
+    """Keep generated cache files in runtime/, never beside source files."""
+    return str(runtime_directory())
 
 
 CHARACTERS_CACHE_FILE = os.path.join(get_writable_path(), 'characters_cache.json')
@@ -996,7 +1076,7 @@ def get_characters(request: CharactersRequest):
     """获取最新官方角色列表（自动发现新角色）
     数据源：排行榜API的 pageProps.character_id 数组（完整角色清单，含中文名/工具名/排序）
     """
-    global query_crawler
+    query_crawler = None
 
     try:
         start_time = time.time()
@@ -1031,9 +1111,8 @@ def get_characters(request: CharactersRequest):
                 }
             raise HTTPException(status_code=403, detail="角色列表需要登录后才能获取，请先登录")
 
-        # 复用查询爬虫实例，并刷新build_id
-        if query_crawler is None or query_crawler.headers.get('cookie') != cookie_to_use:
-            query_crawler = SF6BattleLogCrawler(cookie=cookie_to_use)
+        # 每次请求独立持有客户端，避免并发修改玩家及凭据状态。
+        query_crawler = SF6BattleLogCrawler(cookie=cookie_to_use)
         try:
             fresh_build_id = query_crawler.fetch_build_id()
             if fresh_build_id:
@@ -1125,11 +1204,14 @@ def get_characters(request: CharactersRequest):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取角色列表失败: {str(e)}")
+    finally:
+        if query_crawler is not None:
+            query_crawler.session.close()
 
 
 # ==================== 版本更新检查 ====================
 
-APP_VERSION = '0.6'  # 当前应用版本（前端 APP_VERSION 常量与此保持同步）
+APP_VERSION = '0.7'  # 当前应用版本（前端 APP_VERSION 常量与此保持同步）
 
 GITHUB_REPO = 'HuuuugePony/sf6-tracker'
 
@@ -1176,4 +1258,4 @@ def check_version():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=7648)
+    uvicorn.run(app, host="127.0.0.1", port=7648)

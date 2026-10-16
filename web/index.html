@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SF6-TRACKER</title>
     <!-- 版本号参数用于绕开 WebView2 磁盘缓存中的旧资源条目，更新前端后递增 v 值 -->
-    <link rel="stylesheet" href="/web/styles.css?v=17">
+    <link rel="stylesheet" href="/web/styles.css?v=36">
 </head>
 <body>
     <div class="container">
@@ -29,11 +29,14 @@
         <div class="main-content">
             <!-- 侧边栏 -->
             <div class="sidebar">
+                <!-- Each entry uses the same route dispatcher, including offline history. -->
                 <div class="sidebar-tab active" onclick="switchTab('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>主页</div>
                 <div class="sidebar-tab" onclick="switchTab('query')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>查询</div>
                 <div class="sidebar-tab" onclick="switchTab('ranking')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>排行榜</div>
                 <div class="sidebar-tab" onclick="switchTab('fighters')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>格斗圈</div>
+                <div class="sidebar-tab" role="button" tabindex="0" onclick="switchTab('history')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchTab('history')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v6h6M3 9a9 9 0 1 1 1 10"/><path d="M12 7v5l3 2"/></svg>本地历史</div>
                 <div class="sidebar-tab" onclick="switchTab('favorites')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>收藏</div>
+                <div class="sidebar-tab" data-page="notes" role="button" tabindex="0" onclick="switchTab('notes')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchTab('notes')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3h12a2 2 0 0 1 2 2v16H6a2 2 0 0 1-2-2V3Z"/><path d="M8 7h6M8 11h6M8 15h4"/></svg>对策笔记</div>
                 <div class="sidebar-tab" onclick="switchTab('settings')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>设置</div>
             </div>
             
@@ -91,7 +94,7 @@
                             <div class="settings-item">
                                 <div>
                                     <div class="settings-item-label">清空缓存</div>
-                                    <div class="settings-item-desc">清除本地缓存数据（登录状态、搜索历史等）</div>
+                                <div class="settings-item-desc">清除登录状态、搜索历史和角色缓存，保留收藏、备注和外观设置</div>
                                 </div>
                                 <div class="settings-item-action">
                                     <button class="btn-clear-cache" onclick="clearCache()">清空</button>
@@ -106,7 +109,7 @@
                                     <div class="settings-item-label">版本</div>
                                 </div>
                                 <div class="settings-item-action">
-                                    <span class="version-badge">v0.6</span>
+                                    <span class="version-badge">v0.7</span>
                                 </div>
                             </div>
                             <div class="settings-item">
@@ -142,22 +145,30 @@
                     <h3>用户登录</h3>
                     <button class="close-btn" onclick="hideLoginModal()">&times;</button>
                 </div>
-                <p style="font-size: 13px; margin-bottom: 15px; color: #666;">点击下方按钮打开浏览器，手动完成登录后系统将自动获取您的用户信息</p>
-                <button onclick="startLogin()" id="loginBtn" style="background: #27ae60;">打开浏览器登录</button>
-                <div id="loginStatus"></div>
-                
-                <div id="confirmSection" style="display:none; margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.06);">
-                    <p style="font-size: 13px; margin: 8px 0; color: #ccc;">请在打开的浏览器中完成登录，然后点击下方按钮</p>
-                    <button onclick="confirmLogin()" id="confirmBtn">获取用户信息</button>
-                    <div id="confirmStatus"></div>
-                </div>
-                
-                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.06);">
-                    <p style="font-size: 13px; margin: 8px 0; color: #666;">或者直接粘贴Cookie登录（F12 → Console → document.cookie）</p>
-                    <textarea id="cookieInput" placeholder="粘贴Cookie字符串..." style="width: 100%; height: 60px; resize: vertical; background: rgba(0,0,0,0.3); color: #eee; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 8px; font-size: 12px; font-family: monospace;"></textarea>
-                    <button onclick="cookieLogin()" id="cookieLoginBtn" style="margin-top: 8px; background: #2980b9;">Cookie登录</button>
+                <p class="login-hint">推荐：在平常使用的浏览器完成官网登录，再导入 Cookie。无需向应用提供账号密码。</p>
+                <button onclick="openOfficialLogin()" id="officialLoginBtn">打开默认浏览器访问官网</button>
+                <a class="login-official-link" href="https://www.streetfighter.com/6/buckler/zh-hans" target="_blank" rel="noopener noreferrer">手动打开官网</a>
+                <div id="officialLoginStatus" role="status"></div>
+                <div class="login-cookie-section">
+                    <label for="cookieInput" class="login-hint">Cookie 导入</label>
+                    <textarea id="cookieInput" aria-label="官网 Cookie" autocomplete="off" spellcheck="false" autocapitalize="off" placeholder="粘贴 Buckler 官网 Cookie 字符串…"></textarea>
+                    <details class="login-cookie-help"><summary>如何获取 Cookie</summary><p>在已登录的 Buckler 页面打开开发者工具 → Network，刷新页面并选择官网请求，在 Request Headers 中复制 Cookie 的值。不要复制 CAPCOM ID 密码、整个请求或响应。</p></details>
+                    <label class="login-remember"><input id="rememberLogin" type="checkbox">在此设备记住登录（Cookie 未加密，仅限私人电脑）</label>
+                    <p class="login-hint login-risk">默认仅在本次会话保存。Cookie 是登录凭证，不要分享或截图。</p>
+                    <button onclick="cookieLogin()" id="cookieLoginBtn" style="margin-top: 8px; background: #2980b9;">验证 Cookie 并登录</button>
                     <div id="cookieLoginStatus"></div>
                 </div>
+                <details class="login-browser-fallback">
+                    <summary>备用：Edge 自动读取 Cookie</summary>
+                    <p class="login-hint">使用 WebDriver 临时窗口，可能遇到人机验证。需你手动完成；反复失败请用上方方式，不要连续重试。取消将关闭此临时窗口，不影响普通浏览器。</p>
+                    <button onclick="startLogin()" id="loginBtn">打开临时 Edge 窗口</button>
+                    <div id="loginStatus" role="status"></div>
+                    <div id="confirmSection" style="display:none; margin-top: 10px;">
+                        <p class="login-hint">完成登录并返回 Buckler 页面后，点击验证。窗口最长保留 10 分钟。</p>
+                        <button onclick="confirmLogin()" id="confirmBtn">验证登录</button>
+                        <div id="confirmStatus" role="status"></div>
+                    </div>
+                </details>
             </div>
         </div>
         
@@ -184,6 +195,27 @@
         </div>
     </div>
 
-    <script src="/web/app.js?v=17"></script>
+    <script src="/web/state.js?v=34" defer></script>
+    <script src="/web/utils.js?v=34" defer></script>
+    <script src="/web/api.js?v=34" defer></script>
+    <script src="/web/storage.js?v=36" defer></script>
+    <script src="/web/theme.js?v=34" defer></script>
+    <script src="/web/rankings.js?v=34" defer></script>
+    <script src="/web/fighters.js?v=34" defer></script>
+    <script src="/web/characters.js?v=34" defer></script>
+    <script src="/web/matchup-notes.js?v=36" defer></script>
+    <script src="/web/charts.js?v=34" defer></script>
+    <script src="/web/reports.js?v=34" defer></script>
+    <script src="/web/insights.js?v=34" defer></script>
+    <script src="/web/battle-render.js?v=34" defer></script>
+    <script src="/web/reviews.js?v=36" defer></script>
+    <script src="/web/search.js?v=34" defer></script>
+    <script src="/web/battle-data.js?v=34" defer></script>
+    <script src="/web/auth.js?v=34" defer></script>
+    <script src="/web/exports.js?v=34" defer></script>
+    <script src="/web/battle-filters.js?v=34" defer></script>
+    <script src="/web/filter-handlers.js?v=34" defer></script>
+    <script src="/web/history.js?v=34" defer></script>
+    <script src="/web/app.js?v=34" defer></script>
 </body>
 </html>

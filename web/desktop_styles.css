@@ -172,25 +172,33 @@ table {
     width: 100% !important;
 }
 
-th, td {
+table:not(.insights-table) th, table:not(.insights-table) td {
     border: 1px solid #2a2a2a !important;
     padding: 8px 10px !important;
     font-size: 12px !important;
 }
 
-th {
+table:not(.insights-table) th {
     background: #1a1a1a !important;
     font-weight: 600 !important;
     color: #ccc !important;
     text-align: left !important;
 }
 
-tr:nth-child(even) {
+table:not(.insights-table) tr:nth-child(even) {
     background: #141414 !important;
 }
 
-tr:hover {
+table:not(.insights-table) tr:hover {
     background: #1e1e1e !important;
+}
+
+/* Analysis tables keep their own compact spacing and theme instead of the generic dark grid. */
+.player-insights-page button:focus-visible,
+.rstat-dashboard button:focus-visible,
+.rstat-dashboard summary:focus-visible {
+    outline: 2px solid #55b9e8 !important;
+    outline-offset: 2px;
 }
 
 /* 模态框优化 */
@@ -743,4 +751,31 @@ body.sf6-theme .container {
 }
 body.sf6-theme .content-area {
     background: transparent !important;
+}
+
+/* Structural analysis buttons are headings/rows, not filled action buttons. */
+body.light-theme .rstat-dashboard .rstat-title,
+body.light-theme .rstat-dashboard .rstat-usage-row {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+body.light-theme .rstat-dashboard .rstat-usage-row:hover {
+    background: rgba(41,128,185,.06) !important;
+}
+body.light-theme .rstat-dashboard .rstat-highlights > button {
+    background: rgba(255,255,255,.65) !important;
+    box-shadow: none !important;
+}
+body.light-theme .player-insights-page .insight-group-tabs button {
+    background: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+}
+body.light-theme .player-insights-page .insight-group-tabs button.active {
+    border-bottom-color: #1979ab !important;
+}
+.notebook-page button:focus-visible, .notebook-toolbar button:focus-visible {
+    outline: 2px solid #55b9e8 !important;
+    outline-offset: 2px;
 }

@@ -1,16 +1,16 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+from pathlib import Path
+
+project_root = Path(SPECPATH).resolve().parent
 block_cipher = None
 
 a = Analysis(
-    ['desktop_app.py'],
-    pathex=[],
+    [str(project_root / 'desktop_app.py')],
+    pathex=[str(project_root)],
     binaries=[],
     datas=[
-        ('web/index.html', 'web'),
-        ('web/styles.css', 'web'),
-        ('web/app.js', 'web'),
-        ('desktop_styles.css', '.'),
+        (str(project_root / 'web'), 'web'),
     ],
     hiddenimports=[
         'uvicorn',
@@ -57,7 +57,7 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='SF6-Tracker-v0.6',
+    name='SF6-Tracker-v0.7',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -70,5 +70,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='chunli.ico',
+    icon=str(project_root / 'assets' / 'chunli.ico'),
 )

@@ -1,11 +1,15 @@
 import requests
 import pandas as pd
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed, wait, FIRST_COMPLETED
 import time
 import json
 import logging
+import threading
+import math
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+from urllib3.exceptions import MaxRetryError
+from .battle_data import BattlePageError, BattleAuthenticationError, parse_battle_page, player_identity, page_props
 
 # 配置日志（关闭DEBUG）
 logging.basicConfig(
@@ -14,6 +18,10 @@ logging.basicConfig(
     datefmt='%H:%M:%S'
 )
 logger = logging.getLogger(__name__)
+
+_build_id_cache = {}
+_build_id_lock = threading.Lock()
+BUILD_ID_CACHE_TTL = 300
 
 
 class SF6BattleLogCrawler:
@@ -28,6 +36,7 @@ class SF6BattleLogCrawler:
         self.player_name = None
         self.player_sid = None
         self.player_profile = {}  # 存储玩家详细资料
+        self.collection_status = {}
         
         # 如果未提供cookie，使用默认cookie
         if cookie is None:
@@ -66,7 +75,17 @@ class SF6BattleLogCrawler:
         self.session.mount('http://', adapter)
         
         # 自动获取build_id
-        self.build_id = self.fetch_build_id()
+        try:
+            with _build_id_lock:
+                cached = _build_id_cache.get(self.lang)
+                if cached and time.monotonic() - cached[1] < BUILD_ID_CACHE_TTL:
+                    self.build_id = cached[0]
+                else:
+                    self.build_id = self.fetch_build_id()
+                    _build_id_cache[self.lang] = (self.build_id, time.monotonic())
+        except Exception:
+            self.session.close()
+            raise
         logger.debug(f'[__init__] build_id已设置: {self.build_id}')
 
     def fetch_build_id(self):
@@ -140,6 +159,21 @@ class SF6BattleLogCrawler:
         else:
             raise Exception('未提供 Cookie')
 
+    def _get_data_response(self, url, timeout=3):
+        """官网发布新版本时刷新 build ID，并仅重试一次。"""
+        response = self.session.get(url, timeout=timeout)
+        if response.status_code == 404:
+            stale_build = url[len(self.api_base_url) + 1:].split('/')[0]
+            with _build_id_lock:
+                cached = _build_id_cache.get(self.lang)
+                if cached and cached[0] != stale_build:
+                    self.build_id = cached[0]
+                else:
+                    self.build_id = self.fetch_build_id()
+                    _build_id_cache[self.lang] = (self.build_id, time.monotonic())
+            response = self.session.get(url.replace(f'/{stale_build}/', f'/{self.build_id}/', 1), timeout=timeout)
+        return response
+
     def fetch_page(self, page=1, battle_type='all'):
         """
         获取指定页面的JSON数据（通过Next.js API）
@@ -164,7 +198,7 @@ class SF6BattleLogCrawler:
         url = f'{self.api_base_url}/{self.build_id}/{self.lang}/profile/{self.user_id}/{path}.json?page={page}&sid={self.user_id}'
         logger.debug(f'[fetch_page] 开始请求第{page}页, 类型:{battle_type}')
         start_time = time.time()
-        response = self.session.get(url, timeout=3)
+        response = self._get_data_response(url)
         request_time = time.time() - start_time
         logger.debug(f'[fetch_page] 第{page}页请求完成, 耗时:{request_time:.3f}s, 状态码:{response.status_code}')
         response.raise_for_status()
@@ -185,7 +219,7 @@ class SF6BattleLogCrawler:
         url = f'{self.api_base_url}/{self.build_id}/{self.lang}/profile/{self.user_id}.json?sid={self.user_id}'
         logger.debug(f'[fetch_profile] 开始请求玩家信息, user_id:{self.user_id}')
         start_time = time.time()
-        response = self.session.get(url, timeout=3)
+        response = self._get_data_response(url)
         request_time = time.time() - start_time
         logger.debug(f'[fetch_profile] 玩家信息请求完成, 耗时:{request_time:.3f}s, 状态码:{response.status_code}')
         response.raise_for_status()
@@ -281,6 +315,9 @@ class SF6BattleLogCrawler:
             ]
             for field in battle_stats_fields:
                 profile_data['battle_stats_detail'][field] = battle_stats.get(field, 0.0)
+            profile_data['battle_stats_available_fields'] = [field for field in battle_stats_fields
+                if isinstance(battle_stats.get(field), (int, float))
+                and not isinstance(battle_stats.get(field), bool) and math.isfinite(battle_stats[field])]
             
             # 提取各角色对阵各对手的胜率数据
             character_win_rates_by_rival = play_data.get('character_win_rates_by_rival_character', [])
@@ -302,7 +339,8 @@ class SF6BattleLogCrawler:
         except Exception as e:
             elapsed = time.time() - start_time
             logger.debug(f'[extract_profile] 玩家资料解析失败, 耗时:{elapsed:.3f}s, 错误:{e}')
-            return profile_data
+            self.player_profile = {}
+            raise BattlePageError('玩家资料解析不完整') from e
     
     def _get_input_type_name(self, input_type_code):
         """
@@ -425,6 +463,9 @@ class SF6BattleLogCrawler:
         # 玩家2信息
         p2_info = replay_data.get('player2_info') or {}
         p2_player = p2_info.get('player') or {}
+        if self.user_id and str(self.user_id) not in (
+                str(p1_player.get('short_id') or ''), str(p2_player.get('short_id') or '')):
+            raise ValueError('对战记录不包含查询目标')
         p2_character_id = p2_info.get('playing_character_id') or 0
         p2_character_tool = p2_info.get('playing_character_tool_name') or ''
         p2_lp = p2_info.get('league_point') or 0
@@ -481,76 +522,19 @@ class SF6BattleLogCrawler:
         return image_url
     
     def parse_battles_from_json(self, json_data):
-        """
-        从JSON数据中解析所有对战记录
-        :param json_data: JSON字典（Next.js API响应）
-        :return: (对战记录列表, 用户信息字典)
-        """
-        if not json_data:
-            return [], {}
-        
-        logger.debug('[parse_battles] 开始解析对战记录')
-        start_time = time.time()
-        try:
-            page_props = json_data.get('pageProps', {})
-            
-            # 提取用户信息（字段可能为 null，用 or 兜底，防止 str(None) 产生 "None" 字符串）
-            fighter_info = page_props.get('fighter_banner_info') or {}
-            personal_info = fighter_info.get('personal_info') or {}
-            user_info = {
-                'player_name': personal_info.get('fighter_id') or '',
-                'user_id': str(personal_info.get('short_id') or ''),
-                'platform': personal_info.get('platform_name') or '',
-                'favorite_character': fighter_info.get('favorite_character_name') or '',
-                'home_name': fighter_info.get('home_name') or '',
-            }
-            
-            # 提取玩家SID（用户码）
-            if not self.player_sid:
-                sid = (fighter_info.get('sid') or personal_info.get('sid') or
-                       fighter_info.get('user_sid') or personal_info.get('user_sid') or '')
-                if sid:
-                    self.player_sid = str(sid)
-            
-            # 提取对战列表
-            replay_list = page_props.get('replay_list', [])
-            
-            # 解析每条对战
-            all_battles = []
-            for replay_data in replay_list:
-                battle = self.parse_battle_from_json(replay_data)
-                all_battles.append(battle)
-            
-            elapsed = time.time() - start_time
-            logger.debug(f'[parse_battles] 解析完成, 共{len(all_battles)}条记录, 耗时:{elapsed:.3f}s')
-            return all_battles, user_info
-            
-        except Exception as e:
-            elapsed = time.time() - start_time
-            logger.debug(f'[parse_battles] 解析失败, 耗时:{elapsed:.3f}s, 错误:{e}')
-            return [], {}
-    
+        page = parse_battle_page(json_data, self.parse_battle_from_json)
+        self._last_record_failures = page.failed_records
+        return page.records, page.identity
 
-    
     def parse_all_battles(self, json_data):
-        """
-        从JSON数据中解析所有对战记录
-        :param json_data: JSON字典（Next.js API响应）
-        :return: 对战记录列表
-        """
-        battles_from_json, user_info = self.parse_battles_from_json(json_data)
-        
-        if battles_from_json:
-            # 更新用户信息
-            if user_info.get('player_name'):
-                self.player_name = user_info['player_name']
-            if user_info.get('user_id'):
-                self.user_id = user_info['user_id']
-            return battles_from_json
-        
-        # 如果没有找到对战记录，返回空列表而不是抛出异常
-        # 这可能是因为该页没有数据或者玩家记录不足
-        return []
+        records, info = self.parse_battles_from_json(json_data)
+        if info.get('user_id') and self.user_id and info['user_id'] != str(self.user_id):
+            raise BattlePageError('返回的玩家信息与查询目标不符')
+        if info.get('player_name'):
+            self.player_name = info['player_name']
+        if info.get('sid'):
+            self.player_sid = info['sid']
+        return records
     
     def transform_to_dataframe(self, all_battles):
         """
@@ -642,11 +626,18 @@ class SF6BattleLogCrawler:
         for attempt in range(2):
             try:
                 json_data = self.fetch_profile_page()
-                _, user_info = self.parse_battles_from_json(json_data)
+                user_info = player_identity(json_data)
+                if user_info.get('user_id') and user_info['user_id'] != str(self.user_id):
+                    raise BattlePageError('个人资料与查询目标不符')
+                play = page_props(json_data).get('play')
+                if not isinstance(play, dict) or not all(isinstance(play.get(key), dict) for key in ('battle_stats', 'base_info')):
+                    raise BattlePageError('个人资料不完整')
                 logger.debug(f'[fetch_profile_retry] 成功获取玩家资料, 尝试次数:{attempt+1}')
                 return (json_data, user_info)
             except Exception as e:
                 logger.debug(f'[fetch_profile_retry] 第{attempt+1}次尝试失败: {e}')
+                if not self._retryable(e):
+                    break
                 if attempt < 1:
                     time.sleep(0.3)
         logger.debug('[fetch_profile_retry] 获取玩家资料失败')
@@ -666,7 +657,7 @@ class SF6BattleLogCrawler:
             return (page, json_data, None)
         except Exception as e:
             logger.debug(f'[fetch_page_info] 第{page}页获取失败: {e}')
-            return (page, None, str(e))
+            return (page, None, e)
     
     
 
@@ -676,193 +667,180 @@ class SF6BattleLogCrawler:
         :param user_id: 用户ID
         """
         self.user_id = str(user_id)
-    
-    def query_player(self, user_id, pages=10, max_workers=10, battle_type='all', fetch_profile=True):
-        """
-        查询指定玩家的对战记录
-        :param user_id: 玩家ID
-        :param pages: 爬取页数
-        :param max_workers: 最大并发线程数（默认10以提升速度）
-        :param battle_type: 对战类型 (all/rank/casual/custom/hub)
-        :param fetch_profile: 是否获取个人资料（False可提升速度）
-        :return: DataFrame对象
-        """
-        logger.debug(f'[query_player] 开始查询玩家: {user_id}, 页数:{pages}, 并发:{max_workers}, 类型:{battle_type}')
-        # 设置用户ID
+
+    @staticmethod
+    def _retryable(error):
+        if isinstance(error, BattleAuthenticationError):
+            return False
+        # urllib3 has already spent its retry budget for these requests.
+        if isinstance(error, requests.exceptions.RetryError) or (
+                isinstance(error, requests.exceptions.ConnectionError)
+                and any(isinstance(reason, MaxRetryError) for reason in error.args)):
+            return False
+        status = getattr(getattr(error, 'response', None), 'status_code', None)
+        return status not in (400, 401, 403, 404, 405, 422, 429, 500, 502, 503)
+
+    def _collect(self, pages, max_workers, battle_type, fetch_profile):
+        if not 1 <= pages <= 50 or not 1 <= max_workers <= 10:
+            raise ValueError('采集页数需为 1–50，并发数需为 1–10')
+        start = time.monotonic()
+        page_records, failures, record_failures, parse_failures = {}, set(), {}, set()
+        profile_complete = not fetch_profile
+        attempted, empty_pages, errors = set(), set(), {}
+        retried_pages = []
+        last_nonempty_page = 0
+        first_result_ms = None
+        progress_callback = getattr(self, 'progress_callback', None)
+        cancel_event = getattr(self, 'cancel_event', None)
+
+        def check_cancelled():
+            if cancel_event is not None and cancel_event.is_set():
+                raise RuntimeError('查询已取消')
+
+        def emit_progress():
+            nonlocal first_result_ms
+            if not callable(progress_callback):
+                return
+            # Publish only a contiguous prefix: a fast page 5 must not appear as
+            # the latest battle while pages 1–4 are still pending.
+            prefix, page = [], 1
+            while page in page_records:
+                prefix.extend(page_records[page])
+                page += 1
+            prefix = list({record['replay_id']: record for record in prefix}.values())
+            rows = []
+            if page > 1:
+                rows = self.transform_to_dataframe(prefix).to_dict('records')
+                for row in rows:
+                    if 'date' in row:
+                        row['date'] = str(row['date'])
+                if first_result_ms is None:
+                    first_result_ms = round((time.monotonic() - start) * 1000)
+            progress_callback({'type': 'progress', 'data': rows, 'has_records_page': page > 1,
+                'user_info': {'user_id': str(self.user_id), 'player_name': self.player_name},
+                'player_profile': self.player_profile if profile_complete else None,
+                'collection': {'requested_pages': pages, 'fetched_pages': len(page_records),
+                    'profile_complete': profile_complete, 'complete': False,
+                    'first_result_ms': first_result_ms}})
+
+        def consume(page, data):
+            nonlocal last_nonempty_page
+            self._last_record_failures = 0
+            page_records[page] = self.parse_all_battles(data)
+            record_failures[page] = self._last_record_failures
+            failures.discard(page)
+            parse_failures.discard(page)
+            errors.pop(page, None)
+            # Only a validated, genuinely empty upstream list marks the end.
+            # A page where every record failed parsing must not truncate history.
+            replay_list = data.get('pageProps', {}).get('replay_list') if isinstance(data, dict) else None
+            if replay_list == [] and page > last_nonempty_page:
+                empty_pages.add(page)
+            elif replay_list:
+                last_nonempty_page = max(last_nonempty_page, page)
+                # Cope with pages changing while a collection is in progress.
+                empty_pages.difference_update(p for p in tuple(empty_pages) if p < page)
+            emit_progress()
+
+        with ThreadPoolExecutor(max_workers=max_workers + int(fetch_profile)) as executor:
+            profile_future = executor.submit(self._fetch_profile_with_retry) if fetch_profile else None
+            pending = {}
+            if profile_future:
+                pending[profile_future] = None
+            next_page = 1
+            while True:
+                check_cancelled()
+                stop_page = min(empty_pages, default=pages)
+                active_pages = sum(page is not None for page in pending.values())
+                while next_page <= stop_page and active_pages < max_workers:
+                    pending[executor.submit(self.fetch_page_with_info, next_page, battle_type)] = next_page
+                    attempted.add(next_page)
+                    next_page += 1
+                    active_pages += 1
+                if not pending:
+                    break
+                done, _ = wait(pending, return_when=FIRST_COMPLETED)
+                for future in done:
+                    page = pending.pop(future)
+                    if future is profile_future:
+                        try:
+                            data, info = future.result()
+                            if data:
+                                self.extract_player_profile(data)
+                                if info.get('player_name'):
+                                    self.player_name = info['player_name']
+                                profile_complete = bool(self.player_profile)
+                                emit_progress()
+                        except Exception:
+                            logger.warning('个人资料未能完整读取')
+                        continue
+                    try:
+                        _, data, error = future.result()
+                        if error:
+                            failures.add(page)
+                            errors[page] = error
+                        else:
+                            consume(page, data)
+                    except Exception as error:
+                        failures.add(page)
+                        errors[page] = error
+                        parse_failures.add(page)
+
+            # The transport already applies backoff. Retry failed pages together
+            # instead of adding a fixed pause and waiting for each page in series.
+            retried_pages = [page for page in sorted(failures) if self._retryable(errors.get(page))]
+            check_cancelled()
+            if retried_pages:
+                with ThreadPoolExecutor(max_workers=min(max_workers, len(retried_pages))) as retry_pool:
+                    retries = {retry_pool.submit(self.fetch_page, page, battle_type): page for page in retried_pages}
+                    for future in as_completed(retries):
+                        page = retries[future]
+                        try:
+                            consume(page, future.result())
+                        except BattlePageError:
+                            parse_failures.add(page)
+                        except Exception:
+                            pass
+
+        failed = sorted(failures)
+        check_cancelled()
+        self.collection_status = {
+            'requested_pages': pages, 'fetched_pages': len(page_records),
+            'skipped_pages': [page for page in range(1, pages + 1) if page not in attempted],
+            'retried_pages': retried_pages,
+            'failed_pages': failed, 'parse_failed_pages': sorted(parse_failures),
+            'failed_records': sum(record_failures.values()),
+            'record_error_pages': [page for page, count in sorted(record_failures.items()) if count],
+            'profile_complete': profile_complete,
+            'first_result_ms': first_result_ms,
+            'complete': not failed and not any(record_failures.values()) and profile_complete,
+        }
+        if not page_records:
+            raise RuntimeError('所有战绩页均获取或解析失败，请检查登录状态或稍后重试')
+        # Retries replace a page, rather than appending duplicates.
+        records, seen = [], set()
+        for page in sorted(page_records):
+            for record in page_records[page]:
+                replay_id = record.get('replay_id')
+                if replay_id and replay_id in seen:
+                    continue
+                if replay_id:
+                    seen.add(replay_id)
+                records.append(record)
+        frame = self.transform_to_dataframe(records)
+        self.collection_status['elapsed_ms'] = round((time.monotonic() - start) * 1000)
+        logger.info('采集完成：%s 条记录，耗时 %.2f 秒', len(records), time.monotonic() - start)
+        return frame
+
+    def query_player(self, user_id, pages=10, max_workers=5, battle_type='all', fetch_profile=True):
         self.set_user_id(user_id)
-        
-        # 使用异步方式同时获取玩家资料和所有格斗记录页
-        all_battles = []
-        start_time = time.time()
-        
-        # 准备所有任务：可选的个人资料页 + 10页格斗记录
-        logger.debug(f'[query_player] 创建线程池, max_workers={max_workers + (1 if fetch_profile else 0)}')
-        with ThreadPoolExecutor(max_workers=max_workers + (1 if fetch_profile else 0)) as executor:
-            # 可选：提交个人资料页任务
-            profile_future = None
-            if fetch_profile:
-                logger.debug('[query_player] 提交玩家资料获取任务')
-                profile_future = executor.submit(self._fetch_profile_with_retry)
-            
-            # 提交所有格斗记录页任务
-            logger.debug(f'[query_player] 提交{pages}页战绩获取任务')
-            page_futures = {
-                executor.submit(self.fetch_page_with_info, page, battle_type): page 
-                for page in range(1, pages + 1)
-            }
-            
-            # 统一处理所有future（资料页+战绩页），谁先完成先处理谁
-            all_futures = list(page_futures.keys())
-            if profile_future:
-                all_futures.append(profile_future)
-            
-            logger.debug(f'[query_player] 开始处理{len(all_futures)}个任务结果')
-            completed_count = 0
-            failed_pages = []
-            for future in as_completed(all_futures):
-                completed_count += 1
-                if future is profile_future:
-                    try:
-                        logger.debug('[query_player] 处理玩家资料结果')
-                        profile_json_data, user_info = future.result()
-                        if profile_json_data:
-                            if user_info.get('player_name'):
-                                self.player_name = user_info['player_name']
-                            self.extract_player_profile(profile_json_data)
-                            logger.debug(f'[query_player] 玩家资料处理完成, player_name:{self.player_name}')
-                    except Exception as e:
-                        logger.debug(f'[query_player] 玩家资料处理失败: {e}')
-                        if not self.player_name:
-                            self.player_name = f'玩家{user_id}'
-                else:
-                    page, json_data, error = future.result()
-                    if error:
-                        logger.debug(f'[query_player] 第{page}页获取失败: {error}')
-                        failed_pages.append((page, battle_type))
-                        continue
-                    if json_data:
-                        logger.debug(f'[query_player] 开始解析第{page}页数据')
-                        battles = self.parse_all_battles(json_data)
-                        all_battles.extend(battles)
-                        logger.debug(f'[query_player] 第{page}页解析完成, 获得{len(battles)}条记录, 当前总计:{len(all_battles)}条')
-        
-        # 延迟重爬失败的页面
-        if failed_pages:
-            logger.debug(f'[query_player] 有{len(failed_pages)}页失败, 等待1秒后重爬: {[p[0] for p in failed_pages]}')
-            time.sleep(1)
-            for page, bt in failed_pages:
-                try:
-                    logger.debug(f'[query_player] 重爬第{page}页')
-                    data = self.fetch_page(page, bt)
-                    battles = self.parse_all_battles(data)
-                    all_battles.extend(battles)
-                    logger.debug(f'[query_player] 重爬第{page}页成功, 获得{len(battles)}条记录')
-                except Exception as e:
-                    logger.debug(f'[query_player] 重爬第{page}页仍失败: {e}')
-        
-        # 转换为DataFrame
-        logger.debug(f'[query_player] 所有任务完成, 开始转换DataFrame, 共{len(all_battles)}条记录')
-        df = self.transform_to_dataframe(all_battles)
-        
-        elapsed_time = time.time() - start_time
-        logger.debug(f'[query_player] 查询完成! 共{len(all_battles)}条对战记录, 总耗时:{elapsed_time:.2f}秒')
-        print(f'✓ 爬取完成！共 {len(all_battles)} 条对战记录，耗时: {elapsed_time:.2f}秒')
-        
-        return df
-    
-    def crawl(self, pages=1, max_workers=10, battle_type='all', fetch_profile=False):
-        """
-        并行执行爬取任务（使用线程池）
-        :param pages: 要爬取的页数
-        :param max_workers: 最大并发线程数，默认10
-        :param battle_type: 对战类型 (all/rank/casual/custom/hub)
-        :param fetch_profile: 是否并行获取个人资料
-        :return: DataFrame对象
-        """
-        logger.debug(f'[crawl] 开始爬取, 页数:{pages}, 并发:{max_workers}, 类型:{battle_type}, 获取资料:{fetch_profile}')
-        start_time = time.time()
-        
-        all_battles = []
-        
-        # 使用线程池并行爬取
-        logger.debug(f'[crawl] 创建线程池, max_workers={max_workers + (1 if fetch_profile else 0)}')
-        with ThreadPoolExecutor(max_workers=max_workers + (1 if fetch_profile else 0)) as executor:
-            # 可选：提交个人资料页任务
-            profile_future = None
-            if fetch_profile:
-                logger.debug('[crawl] 提交玩家资料获取任务')
-                profile_future = executor.submit(self._fetch_profile_with_retry)
-            
-            # 提交所有格斗记录页任务
-            logger.debug(f'[crawl] 提交{pages}页战绩获取任务')
-            future_to_page = {
-                executor.submit(self.fetch_page_with_info, page, battle_type): page 
-                for page in range(1, pages + 1)
-            }
-            
-            # 统一处理所有future（资料页+战绩页），谁先完成先处理谁
-            all_futures = list(future_to_page.keys())
-            if profile_future:
-                all_futures.append(profile_future)
-            
-            logger.debug(f'[crawl] 开始处理{len(all_futures)}个任务结果')
-            completed_count = 0
-            failed_pages = []
-            for future in as_completed(all_futures):
-                completed_count += 1
-                if future is profile_future:
-                    try:
-                        logger.debug('[crawl] 处理玩家资料结果')
-                        profile_json_data, user_info = future.result()
-                        if profile_json_data:
-                            if user_info.get('player_name'):
-                                self.player_name = user_info['player_name']
-                            self.extract_player_profile(profile_json_data)
-                            logger.debug(f'[crawl] 玩家资料处理完成')
-                    except Exception as e:
-                        logger.debug(f'[crawl] 玩家资料处理失败: {e}')
-                        pass
-                else:
-                    page, json_data, error = future.result()
-                    if error:
-                        logger.debug(f'[crawl] 第{page}页获取失败: {error}')
-                        failed_pages.append((page, battle_type))
-                        continue
-                    if json_data:
-                        logger.debug(f'[crawl] 开始解析第{page}页数据')
-                        battles = self.parse_all_battles(json_data)
-                        all_battles.extend(battles)
-                        logger.debug(f'[crawl] 第{page}页解析完成, 获得{len(battles)}条记录, 当前总计:{len(all_battles)}条')
-        
-        # 延迟重爬失败的页面
-        if failed_pages:
-            logger.debug(f'[crawl] 有{len(failed_pages)}页失败, 等待1秒后重爬: {[p[0] for p in failed_pages]}')
-            time.sleep(1)
-            for page, bt in failed_pages:
-                try:
-                    logger.debug(f'[crawl] 重爬第{page}页')
-                    data = self.fetch_page(page, bt)
-                    battles = self.parse_all_battles(data)
-                    all_battles.extend(battles)
-                    logger.debug(f'[crawl] 重爬第{page}页成功, 获得{len(battles)}条记录')
-                except Exception as e:
-                    logger.debug(f'[crawl] 重爬第{page}页仍失败: {e}')
-        
-        # 转换为DataFrame
-        logger.debug(f'[crawl] 所有任务完成, 开始转换DataFrame, 共{len(all_battles)}条记录')
-        df = self.transform_to_dataframe(all_battles)
-        
-        elapsed_time = time.time() - start_time
-        logger.debug(f'[crawl] 爬取完成! 共{len(all_battles)}条对战记录, 总耗时:{elapsed_time:.2f}秒')
-        print(f'✓ 爬取完成！共 {len(all_battles)} 条对战记录，耗时: {elapsed_time:.2f}秒')
-        
-        return df
+        self.player_name = None
+        self.player_sid = None
+        self.player_profile = {}
+        return self._collect(pages, max_workers, battle_type, fetch_profile)
 
-
-
-if __name__ == '__main__':
-    cookies_tmp = 'CookieConsent={stamp:%27TBAgiCGwi1ROsAX6hB1KBCR3Ry2Xqw0a8XCR2kAn/CwH3RqiFMHXGQ==%27%2Cnecessary:true%2Cpreferences:true%2Cstatistics:true%2Cmarketing:true%2Cmethod:%27explicit%27%2Cver:3%2Cutc:1779945590441%2Cregion:%27cn%27}; _gcl_au=1.1.1092837647.1779945589; _ga=GA1.1.171079987.1779945586; buckler_r_id=b90c7a95-37a3-45f1-a05b-ad10433e5d20; buckler_id=kr4BOgIrOjHnAEjmbM1lLm-C-O-al0y78_0VGgCJ4pP4Z-7HxW7sCrOu4bKXRL6L; _ga_B8S45G09HL=GS2.1.s1783744223$o6$g0$t1783744907$j59$l0$h0; _ga_4BKH6S3JTF=GS2.1.s1784913492$o35$g0$t1784913492$j60$l0$h0; _ga_LZJGXR1W9E=GS2.1.s1784913492$o35$g0$t1784913492$j60$l0$h0; buckler_praise_date=1784913492493'
-    crawler = SF6BattleLogCrawler()
+    def crawl(self, pages=1, max_workers=5, battle_type='all', fetch_profile=False):
+        return self._collect(pages, max_workers, battle_type, fetch_profile)
 
 
 
