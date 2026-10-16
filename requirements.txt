@@ -1,5 +1,6 @@
 # Web Framework
 fastapi>=0.100.0
+pydantic>=2.0.0
 uvicorn>=0.23.0
 
 # HTTP Client

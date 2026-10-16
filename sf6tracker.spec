@@ -7,9 +7,7 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[
-        ('web/index.html', 'web'),
-        ('web/styles.css', 'web'),
-        ('web/app.js', 'web'),
+        ('web', 'web'),
         ('desktop_styles.css', '.'),
     ],
     hiddenimports=[
@@ -57,7 +55,7 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='SF6-Tracker-v0.6',
+    name='SF6-Tracker-v0.7',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

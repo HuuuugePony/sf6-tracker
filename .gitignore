@@ -1,0 +1,42 @@
+# Python 虚拟环境
+.venv/
+venv/
+env/
+
+# Python 缓存
+__pycache__/
+*.py[cod]
+
+# IDE
+.vscode/
+.idea/
+
+# dist
+dist/
+
+# other
+build/
+# 测试目录默认忽略私人资料，仅允许已知回归代码与说明
+tests/*
+!tests/README.md
+!tests/test_history.py
+!tests/test_login_sessions.py
+!tests/test_reliability.py
+!tests/test_second_pass.py
+!tests/test_player_analytics.py
+!tests/frontend_reliability.test.js
+!tests/preview_server.py
+!tests/benchmark_collection.py
+
+# 本机运行数据（仅排除版本管理，不删除文件）
+*.log
+/characters_cache.json
+/player_info.json
+/ranking_debug.json
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+/.ui-previews/
+.env
+.env.*
+!.env.example

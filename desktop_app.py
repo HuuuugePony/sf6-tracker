@@ -7,6 +7,10 @@ import os
 import threading
 import time
 import traceback
+import socket
+import uuid
+import json
+import html
 
 # PyInstaller 打包后的资源路径
 # frozen 模式下，_MEIPASS 指向临时解压目录
@@ -59,18 +63,43 @@ if getattr(sys, 'frozen', False):
     sys.stderr = LogWriter(LOG_FILE, sys.stderr)
     
 
-def start_server():
-    """在后台线程启动 FastAPI 服务"""
+class ServerHandle:
+    def __init__(self):
+        self.instance_id = str(uuid.uuid4())
+        self.server = None
+        self.stopping = threading.Event()
+        self.failed = threading.Event()
+        self.listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            self.listener.bind(('127.0.0.1', 7648))
+            self.listener.listen(128)
+        except OSError:
+            self.listener.close()
+            raise
+
+    def stop(self):
+        self.stopping.set()
+        if self.server is not None:
+            self.server.should_exit = True
+
+
+def start_server(handle):
     try:
-        log_error('=== 服务启动开始 ===')
         from main import app
         import uvicorn
-        log_error('模块导入成功，正在启动 uvicorn...')
-        # 静默模式启动，不输出日志到控制台
-        uvicorn.run(app, host="127.0.0.1", port=7648, log_level="error")
-    except Exception as e:
-        log_error(f'服务启动失败: {e}')
+        if handle.stopping.is_set():
+            return
+        app.state.instance_id = handle.instance_id
+        handle.server = uvicorn.Server(uvicorn.Config(app, log_level="error"))
+        if handle.stopping.is_set():
+            return
+        handle.server.run(sockets=[handle.listener])
+    except BaseException:
+        handle.failed.set()
+        log_error('服务启动失败')
         log_error(traceback.format_exc())
+    finally:
+        handle.listener.close()
 
 
 def load_desktop_styles(window):
@@ -99,71 +128,118 @@ def on_loaded(window):
     window.evaluate_js('document.body.style.visibility = "visible";')
 
 
-def wait_for_server(timeout=15):
-    """等待服务启动成功，带超时检测"""
+def wait_for_server(timeout=15, instance_id=None, failed=None):
+    """Only accept the service belonging to this launch."""
     import urllib.request
-    start_time = time.time()
-    while time.time() - start_time < timeout:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if failed is not None and failed.is_set():
+            return False
         try:
-            resp = urllib.request.urlopen('http://127.0.0.1:7648/home', timeout=2)
-            if resp.status == 200:
-                return True
+            # Do not send localhost requests through a system HTTP proxy.
+            opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+            with opener.open('http://127.0.0.1:7648/api/health', timeout=1) as response:
+                status = json.load(response)
+                if status.get('app') == 'sf6-tracker' and status.get('ready') is True \
+                        and status.get('instance_id') == instance_id:
+                    return True
         except Exception:
             pass
-        time.sleep(0.5)
+        time.sleep(0.2)
     return False
 
 
-def main():
-    """主函数"""
-    print("=" * 60)
-    print("SF6 Tracker - 街霸6对战记录追踪器")
-    print("=" * 60)
-    print("\n正在启动服务...")
-    
-    # 在后台线程启动服务器
-    server_thread = threading.Thread(target=start_server, daemon=True)
-    server_thread.start()
-    
-    # 等待服务真正就绪
-    print("等待服务启动...")
-    if wait_for_server(timeout=15):
-        print("服务已就绪！")
-    else:
-        print("警告：服务启动超时，尝试继续...")
-    
-    print("关闭窗口即可退出程序\n")
-    
-    # 导入 webview 并创建窗口
+def show_startup_error(message):
     import webview
-    
-    # URL 加时间戳强制 WebView2 每次加载最新版本，避免缓存
-    import urllib.parse
-    page_url = f'http://localhost:7648/home?v={int(time.time())}'
-    
-    # 创建原生窗口
-    window = webview.create_window(
-        title='SF6 Tracker v0.6',
-        url=page_url,
-        width=1000,
-        height=800,
-        min_size=(1000, 650),
-        resizable=True,
-        fullscreen=False,
-        frameless=False,
-        easy_drag=True,
-        shadow=True,
-        background_color='#0a0a0a'
-    )
-    
-    # 注册加载完成事件
-    window.events.loaded += lambda: on_loaded(window)
-    
-    # 启动窗口（阻塞直到窗口关闭）
-    # private_mode=False 启用持久化存储（localStorage、cookies等）
+    from collections import deque
+
+    class Actions:
+        retry_requested = False
+        window = None
+
+        def retry(self):
+            self.retry_requested = True
+            self.window.destroy()
+
+        def read_log(self):
+            try:
+                with open(LOG_FILE, encoding='utf-8', errors='replace') as stream:
+                    return ''.join(deque(stream, maxlen=80))
+            except OSError:
+                return '暂无日志。'
+
+    actions = Actions()
+    content = f"""<!doctype html><html lang="zh-CN"><meta charset="utf-8">
+    <style>body{{background:#141414;color:#eee;font:15px 'Microsoft YaHei',sans-serif;padding:32px}}
+    button{{padding:10px 18px;margin:12px 12px 0 0;cursor:pointer}}
+    pre{{white-space:pre-wrap;overflow-wrap:anywhere;color:#bbb;font-size:12px}}</style>
+    <h2>SF6 Tracker 暂时无法启动</h2><p>{html.escape(message)}</p>
+    <button onclick="window.pywebview.api.retry()">重试启动</button>
+    <button onclick="window.pywebview.api.read_log().then(t=>document.getElementById('log').textContent=t)">查看日志</button>
+    <pre id="log"></pre></html>"""
+    actions.window = webview.create_window('SF6 Tracker — 启动失败', html=content,
+                                            js_api=actions, width=650, height=430)
     webview.start(private_mode=False)
-    
-    print("\n程序已退出")
+    return actions.retry_requested
+
+
+class ExportBridge:
+    """Only writes text exports to a location explicitly selected in the save dialog."""
+    _window = None
+
+    def save_export(self, filename, content):
+        import webview
+        import re
+        if not isinstance(filename, str) or not re.fullmatch(r'sf6-[A-Za-z0-9-]+\.(csv|json)', filename):
+            raise ValueError('无效的导出文件名')
+        if not isinstance(content, str) or len(content.encode('utf-8')) > 50 * 1024 * 1024:
+            raise ValueError('导出内容过大，请缩小筛选范围')
+        dialog = webview.FileDialog.SAVE if hasattr(webview, 'FileDialog') else webview.SAVE_DIALOG
+        selected = self._window.create_file_dialog(dialog, save_filename=filename,
+            file_types=('CSV (*.csv)',) if filename.endswith('.csv') else ('JSON (*.json)',))
+        if not selected:
+            return {'cancelled': True}
+        target = selected[0] if isinstance(selected, (tuple, list)) else selected
+        with open(target, 'w', encoding='utf-8', newline='') as stream:
+            stream.write(content)
+        return {'saved': True}
+
+
+def main():
+    import webview
+    while True:
+        try:
+            handle = ServerHandle()
+        except OSError:
+            if show_startup_error('应用可能已在运行，或端口 7648 被其他程序占用。请关闭已有窗口或释放端口后重试。'):
+                continue
+            return
+        server_thread = threading.Thread(target=start_server, args=(handle,), daemon=True)
+        server_thread.start()
+        if not wait_for_server(timeout=20, instance_id=handle.instance_id, failed=handle.failed):
+            handle.stop()
+            server_thread.join(timeout=5)
+            if server_thread.is_alive():
+                show_startup_error('后台服务未能及时退出，请关闭应用后重新启动。')
+                return
+            if show_startup_error('服务启动失败或超时，请查看日志后重试。'):
+                continue
+            return
+        try:
+            bridge = ExportBridge()
+            window = webview.create_window(
+                title='SF6 Tracker v0.7',
+                url=f'http://localhost:7648/home?v={int(time.time())}',
+                width=1000, height=800, min_size=(1000, 650),
+                resizable=True, fullscreen=False, frameless=False,
+                easy_drag=True, shadow=True, background_color='#0a0a0a', js_api=bridge)
+            bridge._window = window
+            window.events.loaded += lambda: on_loaded(window)
+            webview.start(private_mode=False)
+        finally:
+            handle.stop()
+            server_thread.join(timeout=5)
+        return
 
 
 if __name__ == "__main__":
