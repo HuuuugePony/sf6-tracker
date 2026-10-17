@@ -20,6 +20,12 @@
 
 现有在线页面是主要入口，本地历史只是补充；不提供登录账号切换或“哪个账号查询了谁”的管理模型。整理目录不改变界面布局或统计数据。
 
+## 静态官网
+
+`site/` 是独立的产品介绍与下载官网，包含实机截图、宣传片、功能说明和 GitHub Releases 入口，无需后端或构建步骤。它不接收 Cookie，也不提供在线查询。
+
+本机运行 `powershell -ExecutionPolicy Bypass -File .\site-tools\preview.ps1` 可预览；部署时仅上传 `site/` 内容。已准备手动触发的 GitHub Pages 工作流，以及 Cloudflare Pages 上传包与配置说明，详见 [官网预览与部署](site-tools/README.md)。
+
 <a id="usage"></a>
 
 ## 使用与登录
@@ -75,6 +81,8 @@ sf6-tracker/
 │   ├── player_analytics.py   # 榜单与高手参照统计
 │   └── paths.py              # 运行文件目录
 ├── web/                      # 页面、脚本、通用及桌面样式
+├── site/                     # 独立静态官网、实机图片和网页视频
+├── site-tools/               # 官网预览、素材处理、验收与部署说明
 ├── assets/                   # 图标、界面截图与旧版截图归档
 ├── packaging/sf6tracker.spec  # PyInstaller 打包配置
 ├── tests/                    # 离线回归、合成数据预览与性能基准

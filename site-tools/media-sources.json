@@ -1,0 +1,61 @@
+[
+  {
+    "asset": "assets/overview.webp",
+    "source": "宣传片\\SF6 Tracker宣传片\\工程\\public\\native\\overview.png",
+    "size": [
+      986,
+      793
+    ],
+    "change": "WebP encoding only, no cropping or stretching"
+  },
+  {
+    "asset": "assets/trend.webp",
+    "source": "宣传片\\SF6 Tracker宣传片\\工程\\public\\native\\trend.png",
+    "size": [
+      986,
+      793
+    ],
+    "change": "WebP encoding only, no cropping or stretching"
+  },
+  {
+    "asset": "assets/ranking-top.webp",
+    "source": "宣传片\\SF6 Tracker宣传片\\工程\\public\\native\\ranking-top.png",
+    "size": [
+      986,
+      793
+    ],
+    "change": "WebP encoding only, no cropping or stretching"
+  },
+  {
+    "asset": "assets/analysis.webp",
+    "source": "宣传片\\SF6 Tracker宣传片\\工程\\public\\native\\analysis.png",
+    "size": [
+      986,
+      793
+    ],
+    "change": "WebP encoding only, no cropping or stretching"
+  },
+  {
+    "asset": "assets/notes.webp",
+    "source": "宣传片\\SF6 Tracker宣传片\\工程\\public\\native\\notes.png",
+    "size": [
+      986,
+      793
+    ],
+    "change": "WebP encoding only, no cropping or stretching"
+  },
+  {
+    "asset": "assets/history.webp",
+    "source": "宣传片\\SF6 Tracker宣传片\\工程\\public\\native\\history.png",
+    "size": [
+      986,
+      793
+    ],
+    "change": "WebP encoding only, no cropping or stretching"
+  },
+  {
+    "asset": "media/promo.mp4",
+    "source": "宣传片\\SF6 Tracker宣传片\\宣传片 1080p.mp4",
+    "change": "Web delivery copy, 1600x900/30fps, H264/AAC; original 1080p60 and 4K60 retained"
+  }
+]
