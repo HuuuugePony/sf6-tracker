@@ -6,6 +6,7 @@ let rankingStatsFetchId = 0;
 let rankingState = {
     characterId: 'chunli',
     characterFilter: 1,  // 1=所有角色, 4=特定角色（默认所有角色）
+    homeId: 0,
     homeFilter: 1,  // 1=全球, 3=地区
     page: 1,
     data: null,
@@ -19,8 +20,9 @@ let rankingState = {
     statsError: '',
     statsCollapsed: {},  // 统计卡片收起状态 {usage/mr/avg: bool}
     statsSort: 'count', statsCharacterTool: '', statsShowAll: false, statsUsageAll: false, statsMrInput: '',
-    statsHomeFilter: 1,  // 数据统计独立地区筛选: 1=全球, 3=中国
-    cachedStats: {}  // 按地区缓存统计结果 {1: {...}, 3: {...}}
+    statsHomeId: 0,
+    statsHomeFilter: 1,  // 数据统计独立地区筛选: 1=全球, 3=特定地区
+    cachedStats: {}  // key: home_filter:home_category_id:home_id
 };
 
 // 角色工具名映射
@@ -62,7 +64,7 @@ function showRankingPage(shouldRefresh = false) {
     // 更新侧边栏激活状态
     document.querySelectorAll('.sidebar-tab').forEach(tab => {
         tab.classList.remove('active');
-        if (tab.textContent.includes('排行榜')) {
+        if (tab.getAttribute('data-page') === 'ranking') {
             tab.classList.add('active');
         }
     });
@@ -119,13 +121,13 @@ function renderRankingPage() {
                     ${renderCharPickerTrigger({ onclick: 'openRankingCharacterPicker()', label: '所有角色', value: rankingCharName, imgMap: {} })}
                     <div class="ranking-region-btns">
                         <button class="ranking-region-btn ${rankingState.homeFilter === 1 ? 'active' : ''}" onclick="changeRankingRegion(1)">全球</button>
-                        <button class="ranking-region-btn ${rankingState.homeFilter === 3 ? 'active' : ''}" onclick="changeRankingRegion(3)">中国</button>
+                        <button class="ranking-region-btn ${rankingState.homeFilter === 3 ? 'active' : ''}" onclick="openRankingRegionPicker(false)">地区选择${rankingState.homeFilter === 3 ? ' · ' + rankingRegionLabel(rankingState.homeId) : ''}</button>
                     </div>
                 </div>` : `
                 <div class="ranking-filters">
                     <div class="ranking-region-btns">
                         <button class="ranking-region-btn ${rankingState.statsHomeFilter === 1 ? 'active' : ''}" onclick="changeStatsRegion(1)">全球</button>
-                        <button class="ranking-region-btn ${rankingState.statsHomeFilter === 3 ? 'active' : ''}" onclick="changeStatsRegion(3)">中国</button>
+                        <button class="ranking-region-btn ${rankingState.statsHomeFilter === 3 ? 'active' : ''}" onclick="openRankingRegionPicker(true)">地区选择${rankingState.statsHomeFilter === 3 ? ' · ' + rankingRegionLabel(rankingState.statsHomeId) : ''}</button>
                     </div>
                 </div>`}
             </div>
@@ -300,17 +302,13 @@ function changeRankingCharacter(toolName) {
     renderRankingPage();  // 刷新筛选栏，展示选中的角色
 }
 
-function changeRankingRegion(filter) {
-    rankingState.homeFilter = filter;
+function changeRankingRegion(filter, homeId = 0) {
+    if (filter === 3 && !RANKING_REGIONS.some(r => r.id === homeId)) return;
+    rankingState.homeFilter = filter === 3 ? 3 : 1;
+    rankingState.homeId = filter === 3 ? homeId : 0;
     rankingState.page = 1;
-    // 更新按钮状态
-    document.querySelectorAll('.ranking-region-btn').forEach(btn => {
-        btn.classList.remove('active');
-        if ((filter === 1 && btn.textContent.includes('全球')) || (filter === 3 && btn.textContent.includes('中国'))) {
-            btn.classList.add('active');
-        }
-    });
     fetchRankingData();
+    renderRankingPage();
 }
 
 function changeRankingPage(page) {
@@ -368,12 +366,19 @@ function toggleRstatCard(key) {
 // 数据统计地区筛选栏已移至nav-panel内，不再单独渲染
 
 // 切换统计地区：优先用本地缓存，无缓存时重新拉取
-function changeStatsRegion(filter) {
-    if (rankingState.statsHomeFilter === filter || rankingState.statsLoading) return;
+function changeStatsRegion(filter, homeId = 0) {
+    if (filter === 3 && !RANKING_REGIONS.some(r => r.id === homeId)) return;
+    homeId = filter === 3 ? homeId : 0;
+    if (rankingState.statsHomeFilter === filter && rankingState.statsHomeId === homeId) return;
+    ++rankingStatsFetchId;
+    rankingStatsFetchCtrl?.abort();
+    rankingStatsFetchCtrl = null;
+    rankingState.statsLoading = false;
     rankingState.statsHomeFilter = filter;
+    rankingState.statsHomeId = homeId;
     rankingState.statsCharacterTool = '';
     rankingState.statsShowAll = false;
-    const cached = rankingState.cachedStats && rankingState.cachedStats[filter];
+    const cached = rankingState.cachedStats && rankingState.cachedStats[rankingRegionKey(filter, homeId)];
     if (cached) {
         rankingState.stats = cached;
         rankingState.statsError = '';
@@ -395,6 +400,8 @@ async function fetchRankingStats(force) {
 
     const requestId = ++rankingStatsFetchId;
     const homeFilter = rankingState.statsHomeFilter;
+    const homeId = rankingState.statsHomeId;
+    const regionKey = rankingRegionKey(homeFilter, homeId);
     const requestCookie = cookie;
     rankingStatsFetchCtrl?.abort();
     const controller = new AbortController();
@@ -409,7 +416,7 @@ async function fetchRankingStats(force) {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             signal: controller.signal,
-            body: JSON.stringify({ top_n: 500, home_filter: homeFilter, force: !!force, cookie: requestCookie })
+            body: JSON.stringify({ top_n: 500, home_filter: homeFilter, home_category_id: homeFilter === 3 ? 7 : 0, home_id: homeId, force: !!force, cookie: requestCookie })
         });
 
         const result = await response.json();
@@ -422,7 +429,7 @@ async function fetchRankingStats(force) {
 
         rankingState.stats = result;
         if (!rankingState.cachedStats) rankingState.cachedStats = {};
-        rankingState.cachedStats[homeFilter] = result;
+        rankingState.cachedStats[regionKey] = result;
     } catch (error) {
         if (requestId !== rankingStatsFetchId || requestCookie !== cookie) return;
         console.error('排行榜统计请求异常:', error);
@@ -493,7 +500,7 @@ function applyRankingMrInput() {
     const input = document.getElementById('statsMrInput');
     const value = input.value.trim();
     const valid = !value || rankingMilestoneGap(value, 1) !== null;
-    if (!valid) { input.setCustomValidity?.('请输入大于0的整数MR'); input.reportValidity?.(); return; }
+    if (!valid) { input.setCustomValidity?.(uiText('请输入大于0的整数MR')); input.reportValidity?.(); return; }
     input.setCustomValidity?.('');
     updateRankingStatsView({statsMrInput:value});
     document.getElementById('statsMrInput')?.focus?.({preventScroll:true});
@@ -529,7 +536,7 @@ function renderRankingStats(container) {
     const tableBody = controls + table + (details.length > 8 ? `<button class="report-more-btn rstat-more" onclick="updateRankingStatsView({statsShowAll:!rankingState.statsShowAll})">${rankingState.statsShowAll ? '收起' : `展开全部 ${details.length} 个角色`}</button>` : '');
     const regions = (s.region_distribution || []).filter(r => r.name !== '地区未提供' && r.count > 0);
     container.innerHTML = `<div class="ranking-content"><div class="ranking-stats-wrap rstat-dashboard profile-report">
-        <div class="ranking-stats-note">${s.home_filter === 3 ? '中国' : '全球'} · Master前${s.top_n} · ${s.updated_at ? escapeHtml(new Date(s.updated_at*1000).toLocaleString('zh-CN')) : '更新时间未知'}${s.from_cache ? ' · 缓存' : ''} · 非强度榜</div>
+        <div class="ranking-stats-note">${s.home_filter === 3 ? rankingRegionLabel(s.home_id || rankingState.statsHomeId) : '全球'} · Master前${s.top_n} · ${s.updated_at ? escapeHtml(new Date(s.updated_at*1000).toLocaleString('zh-CN')) : '更新时间未知'}${s.from_cache ? ' · 缓存' : ''} · 非强度榜</div>
         ${summary ? `<div class="report-summary-grid rstat-overview">${kpi('榜单样本',`${summary.entries} 条`,`${summary.unique_players ?? '—'} 位玩家`)}${kpi('MR中位数',metric(summary.median_mr),`中间50% ${metric(summary.q1_mr)}–${metric(summary.q3_mr)}`)}${kpi('上榜MR范围',`${metric(summary.min_mr)}–${metric(summary.max_mr)}`,`${summary.mr_samples} 条有效MR`)}${kpi('角色集中度',`${summary.top3_character_share}%`,`前三角色 · 共${summary.character_count}个角色`)}</div>` : ''}
         ${thresholds.length ? card('thresholds','榜单门槛','',milestoneBody) : ''}
         ${highlightsHtml}
@@ -564,7 +571,7 @@ async function fetchRankingData() {
         // 根据地区设置参数
         const homeFilter = rankingState.homeFilter;
         const homeCategoryId = homeFilter === 3 ? 7 : 0;
-        const homeId = homeFilter === 3 ? 36 : 0;
+        const homeId = homeFilter === 3 ? rankingState.homeId : 0;
 
         const response = await fetch(`${API_BASE}/api/ranking`, {
             method: 'POST',

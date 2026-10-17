@@ -1,0 +1,16 @@
+# Verified v0.8 Windows x86 build environment. General development requirements stay flexible.
+fastapi==0.138.1
+pydantic==2.13.4
+uvicorn==0.49.0
+requests==2.34.2
+pandas==2.0.3
+numpy==1.26.4
+selenium==4.45.0
+beautifulsoup4==4.15.0
+pywebview==6.2.1
+pyinstaller==6.21.0
+pyinstaller-hooks-contrib==2026.6
+pythonnet==3.1.0
+clr-loader==0.3.1
+setuptools==82.0.1
+httpx==0.28.1

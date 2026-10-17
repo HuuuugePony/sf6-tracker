@@ -69,7 +69,7 @@ let querySubTab = 'search';  // 查询页子标签: 'search' | 'footprint'
 let lastSearchResults = [];  // 名字搜索结果缓存（官方 fighter_banner_list 条目，渲染到右侧内容区）
 
 // 当前应用版本（更新提示时与 GitHub Releases 最新版本比较）
-const APP_VERSION = 'v0.7';
+const APP_VERSION = 'v0.8';
 
 // 主页/查询对战数据是否加载中：加载未完成时切走再切回，继续显示加载中而非空状态
 let battleRequestTarget = null;

@@ -274,7 +274,7 @@ test('ranking statistics follow the latest selected region', async () => {
     const f = fixture();
     f.run(`lastActiveTab = 'ranking'; rankingState.view = 'stats';`);
     const first = f.run('fetchRankingStats()');
-    f.run('rankingState.statsHomeFilter = 3');
+    f.run('rankingState.statsHomeFilter = 3; rankingState.statsHomeId = 85');
     const second = f.run('fetchRankingStats()');
     assert.equal(f.pending[0].options.signal.aborted, true);
     f.reply(1, {success: true, region: 3});
@@ -282,8 +282,25 @@ test('ranking statistics follow the latest selected region', async () => {
     f.reply(0, {success: true, region: 1});
     await first;
     assert.equal(f.run('rankingState.stats.region'), 3);
-    assert.equal(f.run('rankingState.cachedStats[3].region'), 3);
-    assert.equal(f.run('rankingState.cachedStats[1]'), undefined);
+    assert.equal(f.run("rankingState.cachedStats['3:7:85'].region"), 3);
+    assert.equal(f.run("rankingState.cachedStats['1:0:0']"), undefined);
+});
+
+test('different specific regions send distinct parameters and ignore an older completion', async () => {
+    const f = fixture();
+    f.run(`lastActiveTab='ranking'; rankingState.view='stats';
+        rankingState.statsHomeFilter=3; rankingState.statsHomeId=85;`);
+    const japan = f.run('fetchRankingStats()');
+    f.run('rankingState.statsHomeId=138');
+    const korea = f.run('fetchRankingStats()');
+    assert.equal(JSON.parse(f.pending[0].options.body).home_id,85);
+    assert.equal(JSON.parse(f.pending[1].options.body).home_category_id,7);
+    assert.equal(JSON.parse(f.pending[1].options.body).home_id,138);
+    f.reply(1,{success:true,home_id:138});await korea;
+    f.reply(0,{success:true,home_id:85});await japan;
+    assert.equal(f.run('rankingState.stats.home_id'),138);
+    assert.equal(f.run("rankingState.cachedStats['3:7:85']"),undefined);
+    assert.equal(f.run("rankingState.cachedStats['3:7:138'].home_id"),138);
 });
 
 test('ranking and fighters keep their original centered loading without collection counters', async () => {
@@ -337,7 +354,7 @@ test('ranking statistics keep their original loading and cache only the complete
     await request;
     assert.equal(f.run('rankingState.statsLoading'), false);
     assert.ok(!el('fixedNavSection').innerHTML.includes('加载中…'));
-    assert.equal(f.run('rankingState.cachedStats[1].top_n'), 500);
+    assert.equal(f.run("rankingState.cachedStats['1:0:0'].top_n"), 500);
 });
 
 test('HTML and inline events preserve names containing quotes without executing them', () => {

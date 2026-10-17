@@ -11,7 +11,7 @@ function showSearchInput() {
     // 更新侧边栏激活状态
     document.querySelectorAll('.sidebar-tab').forEach(tab => {
         tab.classList.remove('active');
-        if (tab.textContent.includes('查询')) {
+        if (tab.getAttribute('data-page') === 'query') {
             tab.classList.add('active');
         }
     });
@@ -29,7 +29,7 @@ async function showSearchPage(userId) {
     // 更新侧边栏激活状态
     document.querySelectorAll('.sidebar-tab').forEach(tab => {
         tab.classList.remove('active');
-        if (tab.textContent.includes('查询')) {
+        if (tab.getAttribute('data-page') === 'query') {
             tab.classList.add('active');
         }
     });
@@ -82,8 +82,8 @@ function renderQueryPage() {
             <h2>🔍 查询</h2>
             <div class="nav-panel-body">
                 <div class="sub-nav">
-                    <div class="sub-nav-item${querySubTab === 'search' ? ' active' : ''}" onclick="switchQuerySubTab('search')">查询</div>
-                    <div class="sub-nav-item${querySubTab === 'footprint' ? ' active' : ''}" onclick="switchQuerySubTab('footprint')">足迹</div>
+                    <div class="sub-nav-item${querySubTab === 'search' ? ' active' : ''}" data-query-tab="search" onclick="switchQuerySubTab('search')">查询</div>
+                    <div class="sub-nav-item${querySubTab === 'footprint' ? ' active' : ''}" data-query-tab="footprint" onclick="switchQuerySubTab('footprint')">足迹</div>
                 </div>
                 <div id="querySubPanel"></div>
                 <div id="queryHint"></div>
@@ -106,7 +106,7 @@ function switchQuerySubTab(tab) {
     querySubTab = tab;
     // 更新标签激活态
     document.querySelectorAll('.sub-nav-item').forEach(el => {
-        el.classList.toggle('active', el.textContent.includes(tab === 'search' ? '查询' : '足迹'));
+        el.classList.toggle('active', el.getAttribute('data-query-tab') === tab);
     });
     renderQuerySubPanel();
 }

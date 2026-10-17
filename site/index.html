@@ -12,8 +12,8 @@
   <meta property="og:description" content="查战绩，看趋势，做复盘。一处整理你的街霸 6 对战。">
   <meta property="og:image" content="./assets/share.jpg">
   <link rel="icon" type="image/svg+xml" href="./assets/mark.svg">
-  <link rel="stylesheet" href="./styles.css">
-  <script src="./app.js" defer></script>
+  <link rel="stylesheet" href="./styles.css?v=0.8">
+  <script src="./app.js?v=0.8" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">跳到正文</a>
@@ -38,19 +38,26 @@
           <p class="hero-description">查战绩，看趋势，做复盘。<br>把每场对战，整理成下一次练习的线索。</p>
           <div class="hero-actions"><a class="button button-yellow" href="https://github.com/HuuuugePony/sf6-tracker/releases/latest" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4.5 11 3v8H3zm10-1.8L22 1v10h-9zM3 13h8v8l-8-1.5zm10 0h9v10l-9-1.7z"/></svg>下载 Windows 版 <span aria-hidden="true">↗</span></a><a class="button button-plain" href="#film"><span class="play-icon" aria-hidden="true">▶</span> 看 45 秒实机短片</a></div>
           <div class="backup-download"><a href="https://wwbjc.lanzoum.com/iDKCB4caluad" target="_blank" rel="noopener noreferrer">蓝奏云备用下载 <span aria-hidden="true">↗</span></a><span>密码：<code>93uz</code></span><button class="copy-password" type="button" data-password="93uz" aria-label="复制蓝奏云下载密码">复制密码</button><span class="copy-status" role="status" aria-live="polite"></span></div>
-          <p class="hero-meta">非官方桌面工具 <i></i> 本地保存历史与笔记</p>
+          <p class="hero-meta">v0.8 非官方桌面工具 <i></i> 五种界面语言 · 本地保存历史与笔记</p>
         </div>
         <div class="hero-product">
           <div class="product-backplate" aria-hidden="true"></div>
           <span class="product-label"><span class="status-dot"></span> REAL APP / 实机界面</span>
           <button class="screenshot-button hero-shot" type="button" data-zoom="overview" aria-label="放大查看完整的 SF6 Tracker 战绩界面"><img src="./assets/overview.webp" alt="SF6 Tracker 真实桌面窗口，展示公开玩家概览、胜率、角色对阵与近期对局" width="986" height="793" fetchpriority="high"><span class="zoom-hint">查看完整界面 <span aria-hidden="true">↗</span></span></button>
-          <p class="product-caption">v0.7 开发版实机展示 · 下载版本以 Releases 说明为准</p>
+          <p class="product-caption">v0.7 实机截图 · v0.8 新增多语言与地区选择</p>
         </div>
       </div>
       <div class="hero-bottom container"><span>YOUR MATCHES. YOUR NEXT MOVE.</span><a href="#features">向下探索 <span aria-hidden="true">↓</span></a></div>
     </section>
 
     <div class="feature-strip" aria-label="核心功能"><div class="container strip-inner"><span>查战绩</span><b aria-hidden="true">↗</b><span>看趋势</span><b aria-hidden="true">↗</b><span>找参考</span><b aria-hidden="true">↗</b><span>做复盘</span><b aria-hidden="true">↗</b><span class="strip-latin">READY FOR THE NEXT ROUND.</span></div></div>
+
+    <section class="release-update section-dark" aria-labelledby="release-title">
+      <div class="container release-update-inner">
+        <div><p class="eyebrow">2026.10.17 / WHAT’S NEW</p><h2 id="release-title">v0.8，按你的习惯来。</h2></div>
+        <ul><li><strong>5 种界面语言</strong><span>简中 · 繁中 · English · 日本語 · 한국어</span></li><li><strong>193 个地区选择</strong><span>国旗搜索，排行榜与统计同步支持</span></li><li><strong>更顺手的小细节</strong><span>自动匹配语言，紧凑控件与笔记留白</span></li></ul>
+      </div>
+    </section>
 
     <section id="features" class="features section-dark section-space" aria-labelledby="features-title">
       <div class="container">
@@ -64,7 +71,7 @@
           </div>
           <div class="feature-stage">
             <article id="panel-trend" class="feature-panel" role="tabpanel" aria-labelledby="tab-trend"><div class="panel-topline"><span>PROGRESS / 趋势</span><span>01 — 04</span></div><button class="screenshot-button" data-zoom="trend" aria-label="放大查看完整的 MR 趋势界面"><img src="./assets/trend.webp" alt="实际 EXE 中按卢克角色筛选的排位 MR 曲线，包含真实起伏" width="986" height="793" loading="lazy"></button><div class="panel-description"><h3>分数在变，变化也值得看。</h3><p>按角色查看 LP / MR 趋势，结合角色对阵统计，回看自己在哪些对局里顺手，哪些场景还值得多练。</p></div></article>
-            <article id="panel-ranking" class="feature-panel" role="tabpanel" aria-labelledby="tab-ranking" hidden><div class="panel-topline"><span>RANKING / 榜单</span><span>02 — 04</span></div><button class="screenshot-button" data-zoom="ranking-top" aria-label="放大查看完整的排行榜界面"><img src="./assets/ranking-top.webp" alt="加载完整称号横幅、国旗、头像和 LEGEND 徽章的真实排行榜" width="986" height="793" loading="lazy"></button><div class="panel-description"><h3>找高手，也找一个参考方向。</h3><p>浏览排行榜、切换角色，查看采集样本的 MR 分布与角色占比。样本说明保留在界面里，参考有来处。</p></div></article>
+            <article id="panel-ranking" class="feature-panel" role="tabpanel" aria-labelledby="tab-ranking" hidden><div class="panel-topline"><span>RANKING / 榜单</span><span>02 — 04</span></div><button class="screenshot-button" data-zoom="ranking-top" aria-label="放大查看完整的排行榜界面"><img src="./assets/ranking-top.webp" alt="加载完整称号横幅、国旗、头像和 LEGEND 徽章的真实排行榜" width="986" height="793" loading="lazy"></button><div class="panel-description"><h3>找高手，也找一个参考方向。</h3><p>浏览排行榜、切换角色与地区，查看采集样本的 MR 分布与角色占比。样本说明保留在界面里，参考有来处。</p></div></article>
             <article id="panel-analysis" class="feature-panel" role="tabpanel" aria-labelledby="tab-analysis" hidden><div class="panel-topline"><span>REVIEW / 复盘线索</span><span>03 — 04</span></div><button class="screenshot-button" data-zoom="analysis" aria-label="放大查看完整的训练分析界面"><img src="./assets/analysis.webp" alt="真实训练分析窗口，展示近期表现与已完成加载的 3 位同角色高手参照" width="986" height="793" loading="lazy"></button><div class="panel-description"><h3>下一次练什么，从这里找线索。</h3><p>结合近期表现、常见败局和同角色高手参照，确定自己想回看的问题。也可以抽一场败局，加入待复盘。</p></div></article>
             <article id="panel-notes" class="feature-panel" role="tabpanel" aria-labelledby="tab-notes" hidden><div class="panel-topline"><span>NOTES / 对策笔记</span><span>04 — 04</span></div><button class="screenshot-button" data-zoom="notes" aria-label="放大查看完整的对策笔记界面"><img src="./assets/notes.webp" alt="真实对策笔记界面，展示明确标注为宣传片演示的卢克对肯笔记" width="986" height="793" loading="lazy"></button><div class="panel-description"><h3>复盘时想到的，下次还能找到。</h3><p>收藏关键对局、留下备注，再按“我的角色 → 对手角色”整理对策笔记。输入自动保存，笔记支持导入导出。</p></div></article>
           </div>
@@ -93,7 +100,7 @@
         <div class="section-heading"><div><p class="eyebrow">04 / NEXT ROUND STARTS HERE</p><h2 id="start-title">下一局之前，<br><span>先看懂上一局。</span></h2></div><a class="button button-yellow" href="https://github.com/HuuuugePony/sf6-tracker/releases/latest" target="_blank" rel="noopener noreferrer">下载 Windows 版 <span aria-hidden="true">↗</span></a></div>
         <div class="backup-download start-backup"><a href="https://wwbjc.lanzoum.com/iDKCB4caluad" target="_blank" rel="noopener noreferrer">蓝奏云备用下载 <span aria-hidden="true">↗</span></a><span>密码：<code>93uz</code></span><button class="copy-password" type="button" data-password="93uz" aria-label="复制蓝奏云下载密码">复制密码</button><span class="copy-status" role="status" aria-live="polite"></span></div>
         <ol class="steps"><li><span class="step-number">01</span><div><h3>下载并启动</h3><p>前往 GitHub Releases 或蓝奏云备用地址，下载已发布的 Windows 安装包，按对应版本说明启动。</p></div></li><li><span class="step-number">02</span><div><h3>完成官网登录</h3><p>在自己的浏览器登录 CAPCOM / Buckler，按应用提示导入 Cookie。应用不接收账号密码。</p></div></li><li><span class="step-number">03</span><div><h3>输入玩家，开始回看</h3><p>查询近期对局、查看趋势，收藏想复盘的一场；让自己的记录慢慢积累起来。</p></div></li></ol>
-        <div class="start-bottom"><p>Windows 桌面版需要 Microsoft Edge WebView2 Runtime。<br>截图展示本地 v0.7 开发版，具体下载内容以 Releases 为准。</p><a class="text-link" href="https://github.com/HuuuugePony/sf6-tracker#usage" target="_blank" rel="noopener noreferrer">查看完整使用说明 <span aria-hidden="true">↗</span></a></div>
+        <div class="start-bottom"><p>Windows 桌面版需要 Microsoft Edge WebView2 Runtime。<br>截图与短片展示 v0.7 界面；v0.8 已新增多语言与地区选择。备用源版本以文件名为准，新版本优先使用 GitHub Releases。</p><a class="text-link" href="https://github.com/HuuuugePony/sf6-tracker#usage" target="_blank" rel="noopener noreferrer">查看完整使用说明 <span aria-hidden="true">↗</span></a></div>
       </div>
     </section>
 

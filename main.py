@@ -58,7 +58,7 @@ RESOURCE_PATH = get_resource_path()
 app = FastAPI(
     title="SF6 Battle Log Tracker",
     description="街霸6对战记录API",
-    version="0.7.0",
+    version="0.8.0",
     lifespan=lifespan
 )
 app.include_router(history_router)
@@ -132,7 +132,9 @@ class RankingRequest(BaseModel):
 class RankingStatsRequest(BaseModel):
     """排行榜数据统计请求（聚合传奇段位前N名）"""
     top_n: int = 500  # 聚合前N名玩家（传奇段位）
-    home_filter: int = 1  # 地区筛选: 1=全球, 3=地区（中国）
+    home_filter: int = 1  # 1=全球，3=特定地区
+    home_category_id: int = 0
+    home_id: int = 0
     force: bool = False  # 是否忽略缓存强制重新统计
     cookie: str = None  # 可选的cookie参数
 
@@ -619,14 +621,12 @@ def get_ranking(request: RankingRequest):
 # ==================== 排行榜数据统计（传奇段位前500聚合） ====================
 
 RANKING_STATS_CACHE_TTL = 30 * 60  # 统计结果缓存30分钟
-# 按地区分别缓存: key=(top_n, home_filter)
+# 按完整地区参数缓存，避免不同地区统计结果互相覆盖。
 ranking_stats_cache = {}
 
 
-def _fetch_ranking_page(crawler, page, home_filter=1):
+def _fetch_ranking_page(crawler, page, home_filter=1, home_category_id=0, home_id=0):
     """拉取指定页的全角色Master排行榜，返回ranking_fighter_list"""
-    home_category_id = 7 if home_filter == 3 else 0
-    home_id = 36 if home_filter == 3 else 0
     url = (
         f'{crawler.api_base_url}/{crawler.build_id}/{crawler.lang}/ranking/master.json'
         f'?character_filter=1&platform=1&home_filter={home_filter}'
@@ -655,7 +655,11 @@ def get_ranking_stats(request: RankingStatsRequest):
         start_time = time.time()
         top_n = max(1, min(request.top_n or 500, 1000))
         home_filter = 3 if request.home_filter == 3 else 1
-        cache_key = (top_n, home_filter)
+        home_category_id = 7 if home_filter == 3 else 0
+        home_id = request.home_id if home_filter == 3 else 0
+        if home_filter == 3 and (request.home_category_id != 7 or home_id not in range(1, 195) or home_id == 169):
+            raise HTTPException(status_code=422, detail="请选择有效地区")
+        cache_key = (top_n, home_filter, home_category_id, home_id)
 
         # 缓存有效时直接返回（force时跳过缓存强制重新统计）
         cached = ranking_stats_cache.get(cache_key)
@@ -675,7 +679,7 @@ def get_ranking_stats(request: RankingStatsRequest):
         query_crawler = SF6BattleLogCrawler(cookie=cookie_to_use)
 
         # 先拉第1页，确认数据可用并获取每页条数
-        first_page = _fetch_ranking_page(query_crawler, 1, home_filter)
+        first_page = _fetch_ranking_page(query_crawler, 1, home_filter, home_category_id, home_id)
         if not first_page:
             raise HTTPException(status_code=403, detail="排行榜数据获取失败，请先登录或稍后重试")
 
@@ -687,7 +691,7 @@ def get_ranking_stats(request: RankingStatsRequest):
             # 并发拉取剩余页
             from concurrent.futures import ThreadPoolExecutor, as_completed
             with ThreadPoolExecutor(max_workers=8) as executor:
-                pending = {executor.submit(_fetch_ranking_page, query_crawler, page, home_filter): page
+                pending = {executor.submit(_fetch_ranking_page, query_crawler, page, home_filter, home_category_id, home_id): page
                            for page in range(2, pages_needed + 1)}
                 results = {}
                 try:
@@ -759,6 +763,8 @@ def get_ranking_stats(request: RankingStatsRequest):
             "success": True,
             "top_n": total,
             "home_filter": home_filter,
+            "home_category_id": home_category_id,
+            "home_id": home_id,
             "updated_at": int(time.time()),
             "character_usage": character_usage,
             "mr_distribution": mr_distribution,
@@ -1211,7 +1217,7 @@ def get_characters(request: CharactersRequest):
 
 # ==================== 版本更新检查 ====================
 
-APP_VERSION = '0.7'  # 当前应用版本（前端 APP_VERSION 常量与此保持同步）
+APP_VERSION = '0.8'  # 当前应用版本（前端 APP_VERSION 常量与此保持同步）
 
 GITHUB_REPO = 'HuuuugePony/sf6-tracker'
 

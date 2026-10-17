@@ -3,7 +3,7 @@
 const favoriteNoteDirty = new Set();
 function favoriteNoteElementId(replayId) { return `favorite-note-${encodeURIComponent(replayId)}`; }
 function favoriteNoteSummary(note) {
-    return note ? `对局备注 · ${note.replace(/\s+/g,' ').slice(0,60)}${note.length>60 ? '…' : ''}` : '添加对局备注';
+    return note ? `${uiText('对局备注')} · ${note.replace(/\s+/g,' ').slice(0,60)}${note.length>60 ? '…' : ''}` : uiText('添加对局备注');
 }
 function favoriteBattleNoteHtml(battle) {
     const id=favoriteNoteElementId(battle.replay_id),note=typeof battle.note==='string' ? battle.note : '';
@@ -104,7 +104,7 @@ function showFavoritesPage() {
     // 更新侧边栏激活状态
     document.querySelectorAll('.sidebar-tab').forEach(tab => {
         tab.classList.remove('active');
-        if (tab.textContent.includes('收藏')) {
+        if (tab.getAttribute('data-page') === 'favorites') {
             tab.classList.add('active');
         }
     });

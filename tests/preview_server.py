@@ -131,7 +131,7 @@ if __name__ == '__main__':
         seed(history_api._store)
         main.SF6BattleLogCrawler = PreviewCrawler
         main.user_info = {'user_id': '1000000000', 'player_name': '演示玩家（测试数据）'}
-        main._version_cache.update(checked_at=time.time(), latest='0.7')
+        main._version_cache.update(checked_at=time.time(), latest=main.APP_VERSION)
 
         @main.app.get('/preview', response_class=HTMLResponse)
         def preview():

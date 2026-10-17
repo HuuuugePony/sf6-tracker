@@ -1,0 +1,74 @@
+name: Release SF6 Tracker
+
+on:
+  push:
+    tags:
+      - 'v[0-9]*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          architecture: 'x86'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install verified release dependencies
+        run: python -m pip install -r requirements-dev.txt -c packaging/constraints-release.txt
+      - name: Offline regression tests
+        shell: pwsh
+        run: |
+          python -m unittest discover -s tests -v
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node --test tests/frontend_reliability.test.js tests/i18n.test.js
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Build and audit executable
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          python -m PyInstaller packaging/sf6tracker.spec --clean --noconfirm
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python packaging/verify_build.py "dist/SF6-Tracker-$env:RELEASE_TAG.exe"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-executable
+          path: dist/SF6-Tracker-${{ github.ref_name }}.exe
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-executable
+          path: dist
+      - name: Publish verified tag and executable
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: gh release create "$RELEASE_TAG" "dist/SF6-Tracker-$RELEASE_TAG.exe" --verify-tag --latest --title "SF6 Tracker $RELEASE_TAG" --notes-from-tag

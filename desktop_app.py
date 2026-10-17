@@ -229,7 +229,7 @@ def main():
         try:
             bridge = ExportBridge()
             window = webview.create_window(
-                title='SF6 Tracker v0.7',
+                title='SF6 Tracker v0.8',
                 url=f'http://localhost:7648/home?v={int(time.time())}',
                 width=1000, height=800, min_size=(1000, 650),
                 resizable=True, fullscreen=False, frameless=False,

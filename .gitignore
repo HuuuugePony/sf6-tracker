@@ -25,6 +25,8 @@ tests/*
 !tests/test_second_pass.py
 !tests/test_player_analytics.py
 !tests/frontend_reliability.test.js
+!tests/i18n.test.js
+!tests/test_regions.py
 !tests/preview_server.py
 !tests/benchmark_collection.py
 

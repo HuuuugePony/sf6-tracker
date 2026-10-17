@@ -54,7 +54,7 @@ function showHomePage(shouldRefresh = false) {
     // 更新侧边栏激活状态
     document.querySelectorAll('.sidebar-tab').forEach(tab => {
         tab.classList.remove('active');
-        if (tab.textContent.includes('主页')) {
+        if (tab.getAttribute('data-page') === 'home') {
             tab.classList.add('active');
         }
     });
@@ -75,6 +75,7 @@ window.addEventListener('popstate', () => {
 
 // 页面加载时处理路由
 document.addEventListener('DOMContentLoaded', () => {
+    initLanguage();
     // 初始化主题
     initTheme();
 

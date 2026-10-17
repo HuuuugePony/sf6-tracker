@@ -3,7 +3,7 @@ function showSettingsPage() {
     // 更新侧边栏激活状态
     document.querySelectorAll('.sidebar-tab').forEach(tab => {
         tab.classList.remove('active');
-        if (tab.textContent.includes('设置')) {
+        if (tab.getAttribute('data-page') === 'settings') {
             tab.classList.add('active');
         }
     });

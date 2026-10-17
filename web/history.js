@@ -17,7 +17,7 @@ async function showHistoryPage() {
     isQueryMode = false;
     lastActiveTab = 'history';
     hideSettingsPage();
-    document.querySelectorAll('.sidebar-tab').forEach(tab => tab.classList.toggle('active', tab.textContent.includes('本地历史')));
+    document.querySelectorAll('.sidebar-tab').forEach(tab => tab.classList.toggle('active', tab.getAttribute('data-page') === 'history'));
     const request = beginHistoryRequest();
     playerProfile = historyData.profile || null;
     matchData = historyData.matchData;
@@ -151,7 +151,7 @@ async function loadHistoryRecords(append = false) {
 function renderHistoryControls() {
     return `<div class="history-controls">
         <label>本地玩家<select aria-label="历史玩家" onchange="selectHistoryPlayer(this.value)">
-            ${historyState.players.length ? historyState.players.map(p => `<option value="${escapeHtml(p.user_id)}" ${p.user_id === historyState.playerId ? 'selected' : ''}>${escapeHtml(p.player_name)} · ${p.total_records} 条</option>`).join('') : '<option>暂无保存的玩家</option>'}</select></label>
+            ${historyState.players.length ? historyState.players.map(p => `<option translate="no" value="${escapeHtml(p.user_id)}" ${p.user_id === historyState.playerId ? 'selected' : ''}>${escapeHtml(p.player_name)} · ${p.total_records}</option>`).join('') : '<option>暂无保存的玩家</option>'}</select></label>
         <span>${historyData.profileUpdatedAt
             ? `资料保存于 ${escapeHtml(new Date(historyData.profileUpdatedAt).toLocaleString('zh-CN'))}`
             : '离线查看已保存的玩家资料与战绩'}</span>

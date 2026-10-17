@@ -20,7 +20,7 @@ npx http-server site -p 18766 -a 127.0.0.1 -c-1
 
 ## 建议：GitHub Pages
 
-项目源码和下载已经在 GitHub，Pages 适合作为这个开源项目的长期介绍入口。已准备 `.github/workflows/deploy-site.yml`，只部署 `site/`，手动触发，不在普通 push 时自动发布。
+项目源码和下载已经在 GitHub，Pages 适合作为这个开源项目的长期介绍入口。`.github/workflows/deploy-site.yml` 只部署 `site/`，支持手动触发，也会随正式版本标签（如 `v0.8`）自动部署；普通分支 push 不自动发布。
 
 1. 审阅并把 `site/`、`site-tools/` 和工作流合入仓库的默认分支。当前本机 `origin/HEAD` 仍指向 `origin/master`，工作分支为 `develop`；应以仓库实际设置为准，不要假设默认分支已经迁移为 main。
 2. 仓库 **Settings → Pages → Build and deployment → Source** 选择 **GitHub Actions**。
@@ -58,6 +58,8 @@ npx http-server site -p 18766 -a 127.0.0.1 -c-1
 把 `site/` 里的文件上传到已有 Nginx / Caddy 的静态目录即可，路径可以是域名根目录或子目录。使用默认 `index.html` 和标准 MIME 类型，保留 MP4 的 Range 请求支持。官网不需要部署 SF6 Tracker 的本机查询服务。
 
 ## 内容与素材
+
+v0.8 同步更新官网版本提示、更新摘要与地区功能说明；保留 v0.7 实机截图和短片，明确注明素材版本。备用下载源版本以文件名为准，新版本优先通过 GitHub Releases 获取。
 
 - 主入口：GitHub Releases latest，已经确认公开地址返回成功并重定向到已发布版本；按钮不固定某个 EXE 文件名。
 - 备用入口：用户提供的蓝奏云 `https://wwbjc.lanzoum.com/iDKCB4caluad`，提取密码 `93uz`。首屏与开始使用区域均显示，支持复制密码；剪贴板不可用时提示手动复制。

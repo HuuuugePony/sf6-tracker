@@ -1,12 +1,19 @@
 # SF6 Tracker
 
-《街头霸王 6》战绩查询与复盘工具 · **v0.7**
+《街头霸王 6》战绩查询与复盘工具 · **v0.8**
 
 本项目为非官方工具。FastAPI 提供本机服务，原生 HTML / CSS / JavaScript 展示数据，pywebview 提供 Windows 桌面窗口。
 
 ![界面预览](assets/screenshots/overview.png)
 
 [使用与登录](#usage) · [本地开发](#development) · [目录结构](#structure) · [数据与隐私](#privacy) · [测试与打包](#verification) · [开发规范](#contributing) · [技术说明](#technical)
+
+## v0.8 更新（2026-10-17）
+
+- 新增英语、日语、韩语、简体中文、繁体中文界面；首次自动匹配系统 / 浏览器语言，不支持时使用英语，手动选择优先。
+- 排行榜与数据统计新增可搜索的国旗地区选择，沿用官网 193 个地区；地区缓存隔离，旧请求不覆盖新结果。
+- 调整语言框尺寸并修复桌面端文字裁切；对策笔记角色栏增加上方留白。
+- 玩家昵称、笔记、备注与本地战绩保留原文和原数据；无需重新登录即可切换界面语言。
 
 ## 功能
 
@@ -17,6 +24,8 @@
 - 对策笔记只提供“我的角色 → 对手角色”的一个文本框，自行编辑、自动保存，支持导入导出。
 - 收藏对局可在卡片内展开备注，输入即保存，收起显示摘要；备注与复盘状态独立。
 - 提供暗色、亮色与春丽主题，以及布局密度设置。
+- 设置 → 界面语言支持简体中文、繁体中文、English、日本語、한국어；保留语言偏好，不翻译玩家昵称和个人笔记。
+- 排行榜和数据统计支持“全球 / 地区选择”，地区按官网国旗清单展示，可搜索，统计缓存按地区隔离。
 
 现有在线页面是主要入口，本地历史只是补充；不提供登录账号切换或“哪个账号查询了谁”的管理模型。整理目录不改变界面布局或统计数据。
 
@@ -29,6 +38,8 @@
 <a id="usage"></a>
 
 ## 使用与登录
+
+首次打开时按系统 / 浏览器首选语言自动匹配，不支持的语言默认使用英语；中文按语言标签区分简繁。手动选择后优先使用已保存的选择。界面语言在“设置 → 外观 → 界面语言”切换，无需重新登录；只改变界面显示，不改本地战绩字段、昵称、备注或笔记内容。官网返回的未知文案保留原文。地区选择沿用 [Buckler 官网特定地区清单](https://www.streetfighter.com/6/buckler/zh-hans/ranking/league)，未列出的地区不自行补编号。
 
 从 [GitHub Releases](https://github.com/HuuuugePony/sf6-tracker/releases) 下载已发布的 Windows 版本。发布包可能落后于开发分支，以版本说明为准。
 
@@ -119,7 +130,7 @@ sf6-tracker/
 ```powershell
 .\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
-node --test tests/frontend_reliability.test.js
+node --test tests/frontend_reliability.test.js tests/i18n.test.js
 
 # 独立临时数据库 + 演示存储，不读取真实账号
 .\.venv\Scripts\python.exe -m tests.preview_server
@@ -135,6 +146,10 @@ node --test tests/frontend_reliability.test.js
 ```
 
 在根目录执行打包命令，配置内部按自身位置解析资源。产物位于 `dist/`；只收集明确列出的资源，不打包运行数据或测试账号。真实登录、验证码、WebView2 窗口与最终 EXE 仍需手工验收，离线测试通过不等于已验证这些流程。
+
+v0.8 的已验证打包依赖约束位于 `packaging/constraints-release.txt`；可用 `python -m pip install -r requirements-dev.txt -c packaging/constraints-release.txt` 安装。构建后运行 `python packaging/verify_build.py dist/SF6-Tracker-v0.8.exe`，核对前端资源与源码逐字节一致，且未收录项目私人目录和运行数据。
+
+推送正式版本标签（如 `v0.8`）会触发 GitHub Actions：Windows x86 构建、离线测试和内容审计通过后，创建附带 EXE 的 GitHub Release；官网从同一标签部署到 GitHub Pages。普通代码 push 不自动发布，官网仍支持手动触发。Release 使用标签说明作为更新日志。
 
 问题反馈：[GitHub Issues](https://github.com/HuuuugePony/sf6-tracker/issues)。本项目与 CAPCOM 无隶属关系，游戏及相关素材的权利归其权利人所有。
 
@@ -159,31 +174,22 @@ node --test tests/frontend_reliability.test.js
 
 #### 分支
 
-- `main`：已验收、可发布，不进行日常开发。
+- `master`：已验收、可发布的稳定分支。
 - `develop`：日常开发和集成，提交前完成对应测试。
-- 不重写已共享历史，不默认强推。发布时把已验收的 `develop` 合入 `main`，用版本标签标记发布点。
-- 本规范不自动提交工作区或推送远端。脏工作区切换分支，不意味着改动已保存到提交中。
+- 发布后同步 `develop`，以版本标签标记发布点；不重写共享历史，不默认强推。
+- 不提交 Cookie、私人测试资料、运行数据；本规范本身不授权自动提交或推送。
 
 正常发布时，先保证工作区干净且验收完成：
 
 ```powershell
-git switch main
+git switch master
 git merge --no-ff develop
-# 按实际版本打标签，例如：git tag -a v0.7 -m "Release v0.7"
+git tag -a v0.8 -m "Release v0.8"
+git push origin master v0.8
 git switch develop
-git merge main
+git merge --ff-only master
+git push origin develop
 ```
-
-##### 从远端 master 迁移
-
-本地改名不会更改 GitHub 默认分支。仓库管理员确认迁移时再执行：
-
-```powershell
-git push -u origin main
-git push -u origin develop
-```
-
-随后在 GitHub 将默认分支设为 `main`，检查 CI / 发布脚本中的 `master` 引用，并设置分支保护：`main` 禁止强推与删除，合入前要求测试通过。多人协作时通过 PR 合入。旧远端 `master` 先保留，迁移完成后再决定是否删除。
 
 #### 提交格式
 
@@ -207,7 +213,7 @@ chore(git): 排除运行缓存和账号文件
 1. `git status --short`：只包含本次修改，不混入账号文件、玩家信息、日志、缓存、数据库或构建产物。
 2. 按文件或补丁暂存：`git add -- <明确路径>` 或 `git add -p`，避免未经检查的 `git add .`。
 3. `git diff --cached --check` 与 `git diff --cached`：检查最终内容，不传播真实凭据。
-4. 后端运行 `python -m unittest discover -s tests -v`；前端逻辑运行 `node --test tests/frontend_reliability.test.js`。
+4. 后端运行 `python -m unittest discover -s tests -v`；前端逻辑运行 `node --test tests/frontend_reliability.test.js tests/i18n.test.js`。
 5. 界面修改检查最小桌面窗口、主题和原有在线流程；归档修改检查重复同步、断网、重启和数据库兼容；打包配置修改另行验收 EXE。
 
 当前格式以文档约定，不修改全局 Git 配置，也不自动安装钩子。测试目录只允许已知回归代码和说明，其他文件仍默认忽略，避免测试账号意外纳入版本管理。
@@ -242,6 +248,7 @@ chore(git): 排除运行缓存和账号文件
 | `charts.js` / `reports.js` | 趋势图、筛选记录分析 |
 | `insights.js` | 页面内训练分析、事实标签、分类双条对比与显式高手参考请求 |
 | `matchup-notes.js` | 按角色组合保存的纯文本笔记、自动保存/备份与旧版迁移；不提供攻略资料 |
+| `i18n.js` / `regions.js` | 五种界面语言、官网地区清单与选择器；内部数据不本地化 |
 | `rankings.js` / `fighters.js` / `search.js` / `characters.js` | 对应功能域 |
 | `utils.js` / `theme.js` | 编码、剪贴板、反馈与外观设置 |
 
@@ -448,7 +455,7 @@ Cookie可代表已登录会话，应按密码级别保护。新登录默认用se
 ```powershell
 python -m pip install -r requirements-dev.txt
 python -m unittest discover -s tests -v
-node --test tests/frontend_reliability.test.js
+node --test tests/frontend_reliability.test.js tests/i18n.test.js
 ```
 
 后端使用模拟官网响应和本地测试客户端；前端使用 Node 内置测试工具和模拟页面环境。测试不读取真实 Cookie，不登录账号，也不请求官网。

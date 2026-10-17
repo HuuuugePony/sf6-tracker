@@ -190,7 +190,7 @@ class ParsingTests(unittest.TestCase):
 class CollectionStreamTests(unittest.TestCase):
     def test_ranking_stats_preserves_rank_order_without_streaming(self):
         page_three = threading.Event()
-        def fetch(_crawler, page, _region):
+        def fetch(_crawler, page, _region, _category=0, _home_id=0):
             if page == 2:
                 self.assertTrue(page_three.wait(timeout=3))
             if page == 3:

@@ -26,7 +26,7 @@ function showFightersPage(shouldRefresh = false) {
     // 更新侧边栏激活状态
     document.querySelectorAll('.sidebar-tab').forEach(tab => {
         tab.classList.remove('active');
-        if (tab.textContent.includes('格斗圈')) {
+        if (tab.getAttribute('data-page') === 'fighters') {
             tab.classList.add('active');
         }
     });
