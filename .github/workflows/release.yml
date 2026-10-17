@@ -62,10 +62,18 @@ jobs:
       - name: Offline regression tests
         shell: pwsh
         run: |
-          python -m unittest discover -s tests -v
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          node --test tests/frontend_reliability.test.js tests/i18n.test.js
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m unittest discover -s tests -v 2>&1 | Tee-Object -FilePath "$env:RUNNER_TEMP/python-tests.log"
+          $pythonExit = $LASTEXITCODE
+          node --test tests/frontend_reliability.test.js tests/i18n.test.js 2>&1 | Tee-Object -FilePath "$env:RUNNER_TEMP/node-tests.log"
+          $nodeExit = $LASTEXITCODE
+          foreach ($name in @('python', 'node')) {
+            Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY -Value "### $name offline tests"
+            Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY -Value '```text'
+            Get-Content "$env:RUNNER_TEMP/$name-tests.log" | Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY
+            Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY -Value '```'
+          }
+          if ($pythonExit -ne 0) { exit $pythonExit }
+          if ($nodeExit -ne 0) { exit $nodeExit }
       - name: Build and audit executable
         shell: pwsh
         env:
