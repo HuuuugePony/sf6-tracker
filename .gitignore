@@ -41,3 +41,6 @@ tests/*
 .env
 .env.*
 !.env.example
+
+# 宣传片工程与素材
+/宣传片/
