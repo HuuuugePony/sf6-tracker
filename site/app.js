@@ -71,3 +71,16 @@ dialog.addEventListener("close", () => {
   document.body.classList.remove("dialog-open");
   opener?.focus({ preventScroll: true });
 });
+
+document.querySelectorAll(".copy-password").forEach((button) => {
+  button.addEventListener("click", async () => {
+    const status = button.parentElement.querySelector(".copy-status");
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error("Clipboard unavailable");
+      await navigator.clipboard.writeText(button.dataset.password);
+      status.textContent = "密码已复制";
+    } catch {
+      status.textContent = "请手动复制密码：" + button.dataset.password;
+    }
+  });
+});
