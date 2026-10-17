@@ -149,7 +149,9 @@ node --test tests/frontend_reliability.test.js tests/i18n.test.js
 
 v0.8 的已验证打包依赖约束位于 `packaging/constraints-release.txt`；可用 `python -m pip install -r requirements-dev.txt -c packaging/constraints-release.txt` 安装。构建后运行 `python packaging/verify_build.py dist/SF6-Tracker-v0.8.exe`，核对前端资源与源码逐字节一致，且未收录项目私人目录和运行数据。
 
-推送正式版本标签（如 `v0.8`）会触发 GitHub Actions：Windows x86 构建、离线测试和内容审计通过后，创建附带 EXE 的 GitHub Release；官网从同一标签部署到 GitHub Pages。普通代码 push 不自动发布，官网仍支持手动触发。Release 使用标签说明作为更新日志。
+推送正式版本标签（如 `v0.8`）会触发 GitHub Actions：Windows x86 构建、离线测试和内容审计通过后，创建附带 EXE 的 GitHub Release。官网遵守现有环境保护规则，仅从 `master` 部署：官网文件或部署配置合入 `master` 时自动更新，仍支持手动触发。Release 使用标签说明作为更新日志。
+
+Windows CI 显式使用 UTF-8，避免中文日志触发编码错误。若修复发布工作流后需重试，可在 `master` 的工作流修复提交中加 `[release]`，或手动运行；流程将从当前应用版本对应的既有标签取源码构建，不移动或覆盖标签。
 
 问题反馈：[GitHub Issues](https://github.com/HuuuugePony/sf6-tracker/issues)。本项目与 CAPCOM 无隶属关系，游戏及相关素材的权利归其权利人所有。
 

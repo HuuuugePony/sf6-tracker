@@ -20,7 +20,7 @@ npx http-server site -p 18766 -a 127.0.0.1 -c-1
 
 ## 建议：GitHub Pages
 
-项目源码和下载已经在 GitHub，Pages 适合作为这个开源项目的长期介绍入口。`.github/workflows/deploy-site.yml` 只部署 `site/`，支持手动触发，也会随正式版本标签（如 `v0.8`）自动部署；普通分支 push 不自动发布。
+项目源码和下载已经在 GitHub，Pages 适合作为这个开源项目的长期介绍入口。`.github/workflows/deploy-site.yml` 只部署 `site/`，支持手动触发；官网文件或部署配置推送到 `master` 时自动部署。沿用现有只允许 `master` 的环境保护规则，不从版本标签直接部署。
 
 1. 审阅并把 `site/`、`site-tools/` 和工作流合入仓库的默认分支。当前本机 `origin/HEAD` 仍指向 `origin/master`，工作分支为 `develop`；应以仓库实际设置为准，不要假设默认分支已经迁移为 main。
 2. 仓库 **Settings → Pages → Build and deployment → Source** 选择 **GitHub Actions**。
